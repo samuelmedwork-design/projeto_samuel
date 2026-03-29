@@ -367,16 +367,12 @@ export default function SurveyPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Sexo <span className="text-red-500">*</span></label>
-                <div className="flex gap-3">
-                  <button type="button" onClick={() => setSex("Masculino")}
-                    className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors ${sex === "Masculino" ? "bg-emerald-600 text-white border-emerald-600" : "bg-white border-slate-300 text-slate-600 hover:border-slate-400"}`}>
-                    Masculino
-                  </button>
-                  <button type="button" onClick={() => setSex("Feminino")}
-                    className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors ${sex === "Feminino" ? "bg-emerald-600 text-white border-emerald-600" : "bg-white border-slate-300 text-slate-600 hover:border-slate-400"}`}>
-                    Feminino
-                  </button>
-                </div>
+                <select value={sex} onChange={(e) => setSex(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                  <option value="">Selecione</option>
+                  <option value="Masculino">Masculino</option>
+                  <option value="Feminino">Feminino</option>
+                </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
