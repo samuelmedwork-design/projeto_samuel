@@ -65,15 +65,25 @@ export default function Sidebar() {
         ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
       `}>
         {/* Header */}
-        <div className={`border-b border-slate-700 flex items-center ${collapsed ? "p-2 justify-center" : "p-3"}`}>
+        <div className={`border-b border-slate-700 ${collapsed ? "p-2" : "p-3"}`}>
           <div className={`bg-white rounded-lg flex items-center justify-center ${collapsed ? "p-1.5" : "p-2 w-full"}`}>
-            <img src="/logo-vertical.png" alt="ErgoAnálise" className={collapsed ? "h-8 w-auto" : "h-16 w-auto"} />
+            <img src="/logo-vertical.png" alt="ErgoAnálise" className={collapsed ? "h-8 w-auto" : "h-14 w-auto"} />
           </div>
+          {!collapsed && (
+            <div className="mt-2 text-center">
+              <h1 className="text-lg font-bold tracking-tight">
+                <span className="text-emerald-400">Ergo</span>Análise
+              </h1>
+              <p className="text-xs text-slate-400">Sistema de AET</p>
+            </div>
+          )}
           {/* Fechar no mobile */}
           {mobileOpen && (
-            <button onClick={() => setMobileOpen(false)} className="text-slate-400 hover:text-white md:hidden ml-2">
-              <FiX size={18} />
-            </button>
+            <div className="flex justify-end mt-1">
+              <button onClick={() => setMobileOpen(false)} className="text-slate-400 hover:text-white md:hidden">
+                <FiX size={18} />
+              </button>
+            </div>
           )}
         </div>
 

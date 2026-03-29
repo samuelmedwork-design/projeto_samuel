@@ -60,10 +60,27 @@ export default function StructurePage() {
     setPosName("");
   };
 
-  const surveyLink = typeof window !== "undefined" ? `${window.location.origin}/survey/${id}` : "";
+  // Gera link com dados embarcados para funcionar sem autenticação
+  const generateSurveyLink = () => {
+    if (typeof window === "undefined") return "";
+    const companyData = {
+      id,
+      name: company?.name || "",
+      sectors: companySectors.map((s) => ({
+        id: s.id,
+        name: s.name,
+        positions: positions.filter((p) => p.sectorId === s.id).map((p) => ({ id: p.id, name: p.name })),
+      })),
+    };
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(companyData))));
+    return `${window.location.origin}/survey/${id}?d=${encoded}`;
+  };
+
+  const surveyLink = generateSurveyLink();
 
   const copyLink = () => {
-    navigator.clipboard.writeText(typeof window !== "undefined" ? `${window.location.origin}/survey/${id}` : "");
+    const freshLink = generateSurveyLink();
+    navigator.clipboard.writeText(freshLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

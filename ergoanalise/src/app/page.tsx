@@ -39,10 +39,16 @@ export default function LoginPage() {
   return (
     <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 min-h-screen">
       <div className="w-full max-w-md mx-4">
-        <div className="flex justify-center mb-8">
-          <div className="bg-white rounded-2xl p-4 shadow-lg">
-            <img src="/logo-vertical.png" alt="ErgoAnálise" className="h-32 w-auto" />
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <div className="bg-white rounded-2xl p-4 shadow-lg">
+              <img src="/logo-vertical.png" alt="ErgoAnálise" className="h-32 w-auto" />
+            </div>
           </div>
+          <h1 className="text-4xl font-bold text-white">
+            <span className="text-emerald-400">Ergo</span>Análise
+          </h1>
+          <p className="text-slate-400 mt-2">Sistema de Análise Ergonômica do Trabalho</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-2xl p-8 space-y-5">

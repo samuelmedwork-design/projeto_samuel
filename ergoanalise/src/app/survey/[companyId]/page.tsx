@@ -43,12 +43,7 @@ export default function SurveyPage() {
   const { companyId } = useParams<{ companyId: string }>();
   const searchParams = useSearchParams();
 
-  // Estado para dados carregados via RPC
-  const [companyData, setCompanyData] = useState<EmbeddedCompany | null>(null);
-  const [loadingData, setLoadingData] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-
-  // Tenta carregar dados embarcados no link legado (parâmetro ?d=)
+  // Tenta carregar dados embarcados no link (parâmetro ?d=)
   const embedded = useMemo<EmbeddedCompany | null>(() => {
     try {
       const param = searchParams.get("d");
@@ -60,25 +55,8 @@ export default function SurveyPage() {
     }
   }, [searchParams]);
 
-  // Busca dados da empresa via RPC do Supabase (link curto)
-  useEffect(() => {
-    if (embedded) {
-      setCompanyData(embedded);
-      setLoadingData(false);
-      return;
-    }
-    supabase.rpc("get_survey_data", { company_uuid: companyId }).then(({ data, error }) => {
-      if (error || !data) {
-        setLoadError(true);
-      } else {
-        setCompanyData(data as EmbeddedCompany);
-      }
-      setLoadingData(false);
-    });
-  }, [companyId, embedded]);
-
-  const companyName = companyData?.name;
-  const companySectorsData = companyData?.sectors || [];
+  const companyName = embedded?.name;
+  const companySectorsData = embedded?.sectors || [];
   const getPositionsForSector = (sectorId: string) => {
     const sec = companySectorsData.find((s) => s.id === sectorId);
     return sec ? sec.positions : [];
@@ -250,7 +228,7 @@ export default function SurveyPage() {
     }));
 
     await supabase.from("surveys").insert({
-      company_id: companyData?.id || companyId,
+      company_id: embedded?.id || companyId,
       worker_name: workerName,
       sector: companySectorsData.find((s) => s.id === sector)?.name || sector,
       position: sectorPositions.find((p: { id: string; name: string }) => p.id === position)?.name || position,
@@ -265,19 +243,7 @@ export default function SurveyPage() {
     setSubmitted(true);
   };
 
-  // Loading state
-  if (loadingData) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-slate-500 text-sm">Carregando questionário...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!companyName || loadError) {
+  if (!companyName) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center max-w-md mx-4">
