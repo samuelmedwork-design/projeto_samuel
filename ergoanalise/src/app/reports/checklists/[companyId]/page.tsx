@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
 import { FiArrowLeft, FiDownload, FiFilter } from "react-icons/fi";
-import { exportToDocx } from "@/lib/export";
+import { exportChecklistDocx, type DocxChecklistData } from "@/lib/export";
 
 export default function ChecklistReportPage() {
   const { companyId } = useParams<{ companyId: string }>();
@@ -31,6 +31,40 @@ export default function ChecklistReportPage() {
 
   const exportPDF = () => window.print();
 
+  const handleDocx = () => {
+    if (!company) return;
+    const data: DocxChecklistData = {
+      companyName: company.name,
+      companyCnpj: company.cnpj,
+      companyCity: company.city,
+      date: new Date().toLocaleDateString("pt-BR"),
+      logoUrl: "/logo-horizontal.png",
+      assessments: companyAssessments.map((a) => ({
+        templateName: a.templateName,
+        sector: getSectorName(a.sectorId),
+        position: getPositionName(a.positionId),
+        workstation: a.workstation || "",
+        worker: a.observedWorker || "",
+        date: new Date(a.createdAt).toLocaleDateString("pt-BR"),
+        blocks: (a.filledBlocks || []).map((fb) => ({
+          name: fb.blockName,
+          image: fb.image,
+          answers: (fb.answers || []).map((ans) => ({
+            question: ans.questionText,
+            value: ans.value,
+            type: ans.type,
+            evidence: ans.evidence,
+            recommendation: ans.recommendation,
+            photos: ans.photos,
+          })),
+          blockRecommendation: fb.blockRecommendation,
+        })),
+        generalNotes: a.generalNotes,
+      })),
+    };
+    exportChecklistDocx(data, `checklists-${company.name}`);
+  };
+
   if (!company) return <div className="p-8 text-slate-500">Empresa não encontrada.</div>;
 
   return (
@@ -46,7 +80,7 @@ export default function ChecklistReportPage() {
               className="flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg hover:bg-red-700 transition-colors font-medium text-sm">
               <FiDownload size={16} /> PDF
             </button>
-            <button onClick={() => exportToDocx("print-area", `checklists-${company?.name || "relatorio"}`)}
+            <button onClick={handleDocx}
               className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm">
               <FiDownload size={16} /> DOCX
             </button>

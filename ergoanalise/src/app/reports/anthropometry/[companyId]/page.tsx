@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
 import { FiArrowLeft, FiDownload, FiUser, FiImage } from "react-icons/fi";
-import { exportToDocx } from "@/lib/export";
+import { exportAnthroDocx, type DocxAnthroData } from "@/lib/export";
 
 export default function AnthropometryReportPage() {
   const { companyId } = useParams<{ companyId: string }>();
@@ -31,6 +31,32 @@ export default function AnthropometryReportPage() {
   };
 
   const exportPDF = () => window.print();
+
+  const handleDocx = () => {
+    if (!company) return;
+    const data: DocxAnthroData = {
+      companyName: company.name,
+      date: new Date().toLocaleDateString("pt-BR"),
+      logoUrl: "/logo-horizontal.png",
+      groups: groupedByPosition.map(([position, workers]) => ({
+        position,
+        workers: workers.map((w) => {
+          const range = findRange(w.height);
+          return {
+            name: w.workerName,
+            sector: w.sector || "—",
+            position: w.position || "—",
+            height: w.height,
+            rangeName: range?.name,
+            rangeMin: range?.minHeight,
+            rangeMax: range?.maxHeight,
+            rangeImage: range?.image,
+          };
+        }),
+      })),
+    };
+    exportAnthroDocx(data, `antropometria-${company.name}`);
+  };
 
   if (!company) {
     return (
@@ -60,7 +86,7 @@ export default function AnthropometryReportPage() {
             className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
             <FiDownload size={16} /> PDF
           </button>
-          <button onClick={() => exportToDocx("print-area", `antropometria-${company?.name || "relatorio"}`)}
+          <button onClick={handleDocx}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
             <FiDownload size={16} /> DOCX
           </button>

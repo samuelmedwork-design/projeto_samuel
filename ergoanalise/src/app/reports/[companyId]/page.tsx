@@ -3,7 +3,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
 import BodyMap, { BodyMapLegend } from "@/components/BodyMap";
 import { FiArrowLeft, FiDownload } from "react-icons/fi";
-import { exportToDocx } from "@/lib/export";
+import { exportSurveyDocx, type DocxSurveyData } from "@/lib/export";
 
 const WORK_RELATION_LABELS: Record<string, string> = {
   ja_inicia_com_dor: "Já inicio o trabalho com essa dor",
@@ -18,6 +18,33 @@ export default function CompanyReportPage() {
   const { companies, surveys } = useData();
   const company = companies.find((c) => c.id === companyId);
   const companySurveys = surveys.filter((s) => s.companyId === companyId);
+
+  const handleDocx = () => {
+    if (!company) return;
+    const data: DocxSurveyData = {
+      companyName: company.name,
+      companyCnpj: company.cnpj,
+      companyCity: company.city,
+      date: new Date().toLocaleDateString("pt-BR"),
+      logoUrl: "/logo-horizontal.png",
+      surveys: companySurveys.map((s) => ({
+        name: s.workerName,
+        sector: s.sector,
+        position: s.position,
+        height: s.height,
+        date: new Date(s.createdAt).toLocaleDateString("pt-BR"),
+        risks: s.ergonomicRisks || [],
+        manualLoad: s.manualLoad,
+        painAreas: (s.painAreas || []).map((p) => ({
+          region: p.region,
+          side: p.side,
+          intensity: p.intensity,
+          workRelation: p.workRelation,
+        })),
+      })),
+    };
+    exportSurveyDocx(data, `queixas-${company.name}`);
+  };
 
   if (!company) return <div className="p-8 text-slate-500">Empresa não encontrada.</div>;
 
@@ -34,7 +61,7 @@ export default function CompanyReportPage() {
               className="flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg hover:bg-red-700 transition-colors font-medium text-sm">
               <FiDownload size={16} /> PDF
             </button>
-            <button onClick={() => exportToDocx("print-area", `queixas-${company?.name || "relatorio"}`)}
+            <button onClick={handleDocx}
               className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm">
               <FiDownload size={16} /> DOCX
             </button>
