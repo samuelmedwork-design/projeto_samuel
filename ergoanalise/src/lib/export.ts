@@ -17,9 +17,7 @@ const DOCX_STYLES = `
     .gray { color: #64748b; font-size: 9pt; }
     .bold { font-weight: bold; }
     .center { text-align: center; }
-    .right { text-align: right; }
     .label { color: #64748b; font-size: 9pt; }
-    .section-header { background-color: #f1f5f9; padding: 6pt 8pt; font-weight: bold; font-size: 11pt; }
     .badge-alta { background-color: #fecaca; color: #991b1b; padding: 2pt 6pt; font-weight: bold; font-size: 9pt; }
     .badge-media { background-color: #fef3c7; color: #92400e; padding: 2pt 6pt; font-weight: bold; font-size: 9pt; }
     .badge-baixa { background-color: #dbeafe; color: #1e40af; padding: 2pt 6pt; font-weight: bold; font-size: 9pt; }
@@ -28,60 +26,106 @@ const DOCX_STYLES = `
   </style>
 `;
 
-function wrapDocx(body: string): string {
-  return `<html xmlns:o="urn:schemas-microsoft-com:office:office"
-    xmlns:w="urn:schemas-microsoft-com:office:word"
-    xmlns="http://www.w3.org/TR/REC-html40">
-    <head><meta charset="utf-8">${DOCX_STYLES}</head>
-    <body>${body}</body></html>`;
+// ─── MHTML: embute imagens de forma que o Word entende ─────────────
+interface MhtmlImage {
+  cid: string;
+  mimeType: string;
+  base64Data: string;
 }
 
-// Converte URL de imagem para base64 data URL
-async function toBase64(url: string): Promise<string> {
-  if (!url) return "";
-  // Já é base64
-  if (url.startsWith("data:")) return url;
+let imageCounter = 0;
+
+async function urlToBase64Parts(url: string): Promise<{ base64: string; mime: string } | null> {
+  if (!url) return null;
+  // Já é data URI
+  if (url.startsWith("data:")) {
+    const match = url.match(/^data:(image\/[^;]+);base64,(.+)$/);
+    if (match) return { mime: match[1], base64: match[2] };
+    return null;
+  }
+  // URL relativa ou absoluta - fetch
   try {
     const res = await fetch(url);
     const blob = await res.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.readAsDataURL(blob);
-    });
+    const buffer = await blob.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return { mime: blob.type || "image/png", base64: btoa(binary) };
   } catch {
-    return url;
+    return null;
   }
 }
 
-// Converte todas as imagens referenciadas para base64
-async function resolveImages(html: string): Promise<string> {
-  const imgRegex = /src="(\/[^"]+)"/g;
-  const matches = [...html.matchAll(imgRegex)];
-  let result = html;
-  for (const match of matches) {
-    const b64 = await toBase64(match[1]);
-    result = result.replace(match[0], `src="${b64}"`);
-  }
-  return result;
-}
+class MhtmlBuilder {
+  private images: MhtmlImage[] = [];
+  private htmlBody = "";
+  private boundary = "----=_NextPart_" + Date.now();
 
-function downloadDoc(html: string, filename: string) {
-  const blob = new Blob([html], { type: "application/msword" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${filename}.doc`;
-  a.click();
-  URL.revokeObjectURL(url);
+  setHtml(html: string) {
+    this.htmlBody = html;
+  }
+
+  async addImage(src: string): Promise<string> {
+    const parts = await urlToBase64Parts(src);
+    if (!parts) return src;
+    const cid = `image${++imageCounter}@ergoanalise`;
+    this.images.push({ cid, mimeType: parts.mime, base64Data: parts.base64 });
+    return `cid:${cid}`;
+  }
+
+  build(): string {
+    const b = this.boundary;
+    let mhtml = `MIME-Version: 1.0\r\nContent-Type: multipart/related; boundary="${b}"\r\n\r\n`;
+
+    // HTML part
+    const fullHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+      <head><meta charset="utf-8">${DOCX_STYLES}</head>
+      <body>${this.htmlBody}</body></html>`;
+
+    mhtml += `--${b}\r\n`;
+    mhtml += `Content-Type: text/html; charset="utf-8"\r\nContent-Transfer-Encoding: base64\r\n\r\n`;
+    mhtml += btoa(unescape(encodeURIComponent(fullHtml)));
+    mhtml += `\r\n`;
+
+    // Image parts
+    for (const img of this.images) {
+      mhtml += `--${b}\r\n`;
+      mhtml += `Content-Type: ${img.mimeType}\r\n`;
+      mhtml += `Content-Transfer-Encoding: base64\r\n`;
+      mhtml += `Content-ID: <${img.cid}>\r\n\r\n`;
+      // Quebra base64 em linhas de 76 chars (padrão MIME)
+      const d = img.base64Data;
+      for (let i = 0; i < d.length; i += 76) {
+        mhtml += d.substring(i, i + 76) + "\r\n";
+      }
+    }
+
+    mhtml += `--${b}--\r\n`;
+    return mhtml;
+  }
+
+  download(filename: string) {
+    const content = this.build();
+    const blob = new Blob([content], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${filename}.doc`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 }
 
 // Exportação genérica por element ID (fallback)
 export async function exportToDocx(elementId: string, filename: string) {
   const el = document.getElementById(elementId);
   if (!el) return;
-  const html = await resolveImages(wrapDocx(el.innerHTML));
-  downloadDoc(html, filename);
+  const builder = new MhtmlBuilder();
+  builder.setHtml(el.innerHTML);
+  builder.download(filename);
 }
 
 // ─── Exportação: Relatório de Checklists ───────────────────────────
@@ -109,12 +153,13 @@ export interface DocxChecklistData {
 }
 
 export async function exportChecklistDocx(data: DocxChecklistData, filename: string) {
+  const builder = new MhtmlBuilder();
   let html = "";
 
   // Logo
   if (data.logoUrl) {
-    const logoB64 = await toBase64(data.logoUrl);
-    html += `<div class="center"><img src="${logoB64}" style="height:50pt;" /></div><br/>`;
+    const cid = await builder.addImage(data.logoUrl);
+    html += `<div class="center"><img src="${cid}" style="height:50pt;" /></div><br/>`;
   }
 
   // Cabeçalho
@@ -128,7 +173,6 @@ export async function exportChecklistDocx(data: DocxChecklistData, filename: str
   </tr></table><hr/>`;
 
   for (const assessment of data.assessments) {
-    // Info da avaliação
     html += `<h2>${assessment.templateName}</h2>`;
     html += `<table class="borderless"><tr>
       <td><span class="label">Setor:</span> ${assessment.sector}</td>
@@ -143,10 +187,12 @@ export async function exportChecklistDocx(data: DocxChecklistData, filename: str
     }
     html += `</table>`;
 
-    // Blocos
     for (const block of assessment.blocks) {
       html += `<h3>${block.name}</h3>`;
-      if (block.image) html += `<img src="${block.image}" style="height:60pt; margin-bottom:4pt;" /><br/>`;
+      if (block.image) {
+        const cid = await builder.addImage(block.image);
+        html += `<img src="${cid}" style="height:60pt; margin-bottom:4pt;" /><br/>`;
+      }
 
       html += `<table class="bordered">`;
       html += `<tr><th style="width:60%">Pergunta</th><th style="width:15%">Resposta</th><th style="width:25%">Obs.</th></tr>`;
@@ -157,6 +203,15 @@ export async function exportChecklistDocx(data: DocxChecklistData, filename: str
         let obs = "";
         if (isNC && a.evidence) obs += `<b>Evidência:</b> ${a.evidence}<br/>`;
         if (isNC && a.recommendation) obs += `<b>Recomendação:</b> ${a.recommendation}`;
+
+        // Fotos
+        if (a.photos && a.photos.length > 0) {
+          for (const photo of a.photos) {
+            const cid = await builder.addImage(photo);
+            obs += `<br/><img src="${cid}" style="max-width:120pt; max-height:90pt;" />`;
+          }
+        }
+
         html += `<tr${rowClass}><td>${a.question}</td><td${valueClass}>${a.value || "—"}</td><td>${obs || "—"}</td></tr>`;
       }
       html += `</table>`;
@@ -172,7 +227,8 @@ export async function exportChecklistDocx(data: DocxChecklistData, filename: str
     html += `<hr/>`;
   }
 
-  downloadDoc(wrapDocx(html), filename);
+  builder.setHtml(html);
+  builder.download(filename);
 }
 
 // ─── Exportação: Relatório de Queixas de Dores ─────────────────────
@@ -202,11 +258,12 @@ const WORK_REL: Record<string, string> = {
 };
 
 export async function exportSurveyDocx(data: DocxSurveyData, filename: string) {
+  const builder = new MhtmlBuilder();
   let html = "";
 
   if (data.logoUrl) {
-    const logoB64 = await toBase64(data.logoUrl);
-    html += `<div class="center"><img src="${logoB64}" style="height:50pt;" /></div><br/>`;
+    const cid = await builder.addImage(data.logoUrl);
+    html += `<div class="center"><img src="${cid}" style="height:50pt;" /></div><br/>`;
   }
 
   html += `<h1>Relatório de Queixas de Dores</h1>`;
@@ -240,8 +297,8 @@ export async function exportSurveyDocx(data: DocxSurveyData, filename: string) {
       if (s.manualLoad.dailyDuration) col1 += `Duração: ${s.manualLoad.dailyDuration}<br/>`;
     }
 
-    // Coluna 2: Ilustração (placeholder texto, SVG não renderiza em Word)
-    let col2 = `<div class="center gray">Diagrama Corporal</div>`;
+    // Coluna 2: Placeholder para diagrama
+    let col2 = `<div class="center gray" style="padding:20pt 0;">Diagrama<br/>Corporal</div>`;
 
     // Coluna 3: Resumo das dores
     let col3 = "";
@@ -269,7 +326,8 @@ export async function exportSurveyDocx(data: DocxSurveyData, filename: string) {
     html += `</tr></table>`;
   }
 
-  downloadDoc(wrapDocx(html), filename);
+  builder.setHtml(html);
+  builder.download(filename);
 }
 
 // ─── Exportação: Relatório Antropométrico ──────────────────────────
@@ -293,11 +351,12 @@ export interface DocxAnthroData {
 }
 
 export async function exportAnthroDocx(data: DocxAnthroData, filename: string) {
+  const builder = new MhtmlBuilder();
   let html = "";
 
   if (data.logoUrl) {
-    const logoB64 = await toBase64(data.logoUrl);
-    html += `<div class="center"><img src="${logoB64}" style="height:50pt;" /></div><br/>`;
+    const cid = await builder.addImage(data.logoUrl);
+    html += `<div class="center"><img src="${cid}" style="height:50pt;" /></div><br/>`;
   }
 
   html += `<h1>Relatório Antropométrico</h1>`;
@@ -325,7 +384,8 @@ export async function exportAnthroDocx(data: DocxAnthroData, filename: string) {
       // Coluna 2: Imagem
       let col2 = "";
       if (w.rangeImage) {
-        col2 = `<img src="${w.rangeImage}" style="max-width:300px; max-height:250px;" />`;
+        const cid = await builder.addImage(w.rangeImage);
+        col2 = `<img src="${cid}" style="max-width:300px; max-height:250px;" />`;
       } else {
         col2 = `<span class="gray">Sem imagem</span>`;
       }
@@ -336,5 +396,6 @@ export async function exportAnthroDocx(data: DocxAnthroData, filename: string) {
     }
   }
 
-  downloadDoc(wrapDocx(html), filename);
+  builder.setHtml(html);
+  builder.download(filename);
 }
