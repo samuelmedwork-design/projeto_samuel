@@ -44,7 +44,7 @@ export default function ReportsPage() {
           <p>Nenhuma empresa encontrada para &ldquo;{search}&rdquo;.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredCompanies.map((company) => {
             const companySurveys = surveys.filter((s) => s.companyId === company.id);
             const companyAssessments = assessments.filter((a) => a.companyId === company.id);
@@ -54,79 +54,53 @@ export default function ReportsPage() {
             const pendingActions = companyActions.filter((a) => a.status === "pendente").length;
 
             return (
-              <div key={company.id} className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="font-semibold text-slate-800 text-lg">{company.name}</h3>
-                    <p className="text-xs text-slate-400 mt-1">{company.cnpj}</p>
-                  </div>
-                  <span className="bg-emerald-100 text-emerald-700 text-xs font-medium px-2.5 py-1 rounded-full">
-                    {company.city}
-                  </span>
+              <div key={company.id} className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow">
+                <div className="mb-3">
+                  <h3 className="font-semibold text-slate-800 text-sm leading-tight">{company.name}</h3>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{company.cnpj} — {company.city}</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="bg-slate-50 rounded-lg p-3">
-                    <div className="flex items-center gap-2 text-slate-500 mb-1">
-                      <FiUsers size={14} />
-                      <span className="text-xs">Respostas</span>
-                    </div>
-                    <p className="text-xl font-bold text-slate-800">{companySurveys.length}</p>
+                <div className="grid grid-cols-2 gap-1.5 mb-3">
+                  <div className="bg-slate-50 rounded-md px-2 py-1.5 flex items-center justify-between">
+                    <span className="text-[10px] text-slate-500">Respostas</span>
+                    <span className="text-sm font-bold text-slate-800">{companySurveys.length}</span>
                   </div>
-                  <div className="bg-slate-50 rounded-lg p-3">
-                    <div className="flex items-center gap-2 text-slate-500 mb-1">
-                      <FiClipboard size={14} />
-                      <span className="text-xs">Checklists</span>
-                    </div>
-                    <p className="text-xl font-bold text-slate-800">{companyAssessments.length}</p>
+                  <div className="bg-slate-50 rounded-md px-2 py-1.5 flex items-center justify-between">
+                    <span className="text-[10px] text-slate-500">Checklists</span>
+                    <span className="text-sm font-bold text-slate-800">{companyAssessments.length}</span>
                   </div>
-                  <div className="bg-slate-50 rounded-lg p-3">
-                    <div className="flex items-center gap-2 text-slate-500 mb-1">
-                      <FiAlertTriangle size={14} />
-                      <span className="text-xs">Queixas</span>
-                    </div>
-                    <p className="text-xl font-bold text-red-600">{totalPains}</p>
+                  <div className="bg-slate-50 rounded-md px-2 py-1.5 flex items-center justify-between">
+                    <span className="text-[10px] text-slate-500">Queixas</span>
+                    <span className="text-sm font-bold text-red-600">{totalPains}</span>
                   </div>
-                  <div className="bg-slate-50 rounded-lg p-3">
-                    <div className="flex items-center gap-2 text-slate-500 mb-1">
-                      <FiFileText size={14} />
-                      <span className="text-xs">Ações Pend.</span>
-                    </div>
-                    <p className="text-xl font-bold text-amber-600">{pendingActions}</p>
+                  <div className="bg-slate-50 rounded-md px-2 py-1.5 flex items-center justify-between">
+                    <span className="text-[10px] text-slate-500">Ações Pend.</span>
+                    <span className="text-sm font-bold text-amber-600">{pendingActions}</span>
                   </div>
-                </div>
-
-                <div className="flex gap-2 mb-4">
-                  <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded">
-                    {companySectors.length} setores
-                  </span>
-                  <span className="text-xs bg-purple-50 text-purple-600 px-2 py-1 rounded">
-                    {companyActions.length} ações
-                  </span>
                 </div>
 
                 {/* Botões de relatório */}
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1.5">
                   <button
                     onClick={() => router.push(`/reports/${company.id}`)}
-                    className="w-full text-sm bg-blue-50 text-blue-700 border border-blue-200 px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors font-medium text-left flex items-center gap-2"
+                    className="w-full text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1.5 rounded-lg hover:bg-blue-100 transition-colors font-medium text-left flex items-center gap-1.5"
                   >
-                    <FiUsers size={14} />
-                    Relatório de Queixas de Dores
+                    <FiUsers size={12} />
+                    Queixas de Dores
                   </button>
                   <button
                     onClick={() => router.push(`/reports/checklists/${company.id}`)}
-                    className="w-full text-sm bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-2 rounded-lg hover:bg-emerald-100 transition-colors font-medium text-left flex items-center gap-2"
+                    className="w-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1.5 rounded-lg hover:bg-emerald-100 transition-colors font-medium text-left flex items-center gap-1.5"
                   >
-                    <FiClipboard size={14} />
-                    Relatório de Checklists Técnicos
+                    <FiClipboard size={12} />
+                    Checklists Técnicos
                   </button>
                   <button
                     onClick={() => router.push(`/reports/anthropometry/${company.id}`)}
-                    className="w-full text-sm bg-purple-50 text-purple-700 border border-purple-200 px-3 py-2 rounded-lg hover:bg-purple-100 transition-colors font-medium text-left flex items-center gap-2"
+                    className="w-full text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2 py-1.5 rounded-lg hover:bg-purple-100 transition-colors font-medium text-left flex items-center gap-1.5"
                   >
-                    <FiActivity size={14} />
-                    Dados Antropométricos
+                    <FiActivity size={12} />
+                    Antropométricos
                   </button>
                 </div>
               </div>
