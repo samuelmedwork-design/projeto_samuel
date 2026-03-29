@@ -1,0 +1,150 @@
+"use client";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useData } from "@/contexts/DataContext";
+import {
+  FiHome, FiClipboard, FiActivity, FiFileText, FiLogOut, FiUser,
+  FiGrid, FiList, FiMenu, FiX, FiBarChart2, FiChevronLeft, FiChevronRight,
+} from "react-icons/fi";
+
+const links = [
+  { href: "/dashboard", label: "Dashboard", icon: FiBarChart2 },
+  { href: "/companies", label: "Empresas", icon: FiHome },
+  { href: "/blocks", label: "Blocos", icon: FiGrid },
+  { href: "/checklist-templates", label: "Checklists", icon: FiList },
+  { href: "/assessments", label: "Avaliações", icon: FiClipboard },
+  { href: "/anthropometry", label: "Antropometria", icon: FiActivity },
+  { href: "/reports", label: "Relatórios", icon: FiFileText },
+];
+
+export default function Sidebar() {
+  const pathname = usePathname();
+  const { user, logout } = useData();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      if (window.innerWidth < 768) {
+        setCollapsed(true);
+        setMobileOpen(false);
+      }
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  if (!user) return null;
+
+  const sidebarWidth = collapsed ? "w-16" : "w-64";
+
+  return (
+    <>
+      {/* Botão hamburger mobile */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="md:hidden fixed top-4 left-4 z-50 bg-slate-900 text-white p-2 rounded-lg shadow-lg"
+      >
+        <FiMenu size={20} />
+      </button>
+
+      {/* Overlay mobile */}
+      {mobileOpen && (
+        <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setMobileOpen(false)} />
+      )}
+
+      <aside className={`
+        ${sidebarWidth} bg-slate-900 text-white flex flex-col min-h-screen shrink-0 transition-all duration-200
+        fixed md:relative z-50
+        ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+      `}>
+        {/* Header */}
+        <div className={`border-b border-slate-700 flex items-center ${collapsed ? "p-2 justify-center" : "p-3"}`}>
+          <div className={`bg-white rounded-lg flex items-center justify-center ${collapsed ? "p-1.5" : "p-2 w-full"}`}>
+            <img src="/logo-vertical.png" alt="ErgoAnálise" className={collapsed ? "h-8 w-auto" : "h-16 w-auto"} />
+          </div>
+          {/* Fechar no mobile */}
+          {mobileOpen && (
+            <button onClick={() => setMobileOpen(false)} className="text-slate-400 hover:text-white md:hidden ml-2">
+              <FiX size={18} />
+            </button>
+          )}
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
+          {links.map((l) => {
+            const active = pathname === l.href || (l.href !== "/dashboard" && pathname.startsWith(l.href));
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                title={collapsed ? l.label : undefined}
+                className={`flex items-center gap-3 rounded-lg text-sm transition-colors ${
+                  collapsed ? "px-0 py-2.5 justify-center" : "px-3 py-2.5"
+                } ${
+                  active
+                    ? "bg-emerald-600 text-white"
+                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                }`}
+              >
+                <l.icon size={18} className="shrink-0" />
+                {!collapsed && <span>{l.label}</span>}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* User + Toggle */}
+        <div className={`border-t border-slate-700 ${collapsed ? "p-2" : "p-4"}`}>
+          {!collapsed ? (
+            <>
+              <div className="flex items-center gap-3 mb-3 px-3">
+                <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center shrink-0">
+                  <FiUser size={14} />
+                </div>
+                <div className="text-sm min-w-0">
+                  <p className="font-medium truncate">{user.name}</p>
+                  <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                </div>
+              </div>
+              <button
+                onClick={logout}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-red-400 transition-colors w-full mb-3"
+              >
+                <FiLogOut size={16} />
+                Sair
+              </button>
+            </>
+          ) : (
+            <div className="flex flex-col items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center">
+                <FiUser size={14} />
+              </div>
+              <button onClick={logout} title="Sair" className="text-slate-400 hover:text-red-400 transition-colors">
+                <FiLogOut size={16} />
+              </button>
+            </div>
+          )}
+
+          {/* Botão de expandir/recolher — seta dentro de círculo, na parte de baixo */}
+          <div className={`flex ${collapsed ? "justify-center" : "justify-end"}`}>
+            <button
+              onClick={() => { setCollapsed(!collapsed); setMobileOpen(false); }}
+              className="hidden md:flex w-8 h-8 rounded-full border border-slate-600 items-center justify-center text-slate-400 hover:text-white hover:border-slate-400 transition-colors"
+              title={collapsed ? "Expandir menu" : "Recolher menu"}
+            >
+              {collapsed ? <FiChevronRight size={16} /> : <FiChevronLeft size={16} />}
+            </button>
+          </div>
+        </div>
+      </aside>
+    </>
+  );
+}
