@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useData, ChecklistBlock, BlockQuestion } from "@/contexts/DataContext";
-import { FiPlus, FiImage, FiGrid, FiTrash2 } from "react-icons/fi";
+import { FiPlus, FiImage, FiGrid, FiTrash2, FiSearch } from "react-icons/fi";
 import { v4 as uuidv4 } from "uuid";
 
 export default function BlocksPage() {
@@ -12,6 +12,11 @@ export default function BlocksPage() {
   const [name, setName] = useState("");
   const [image, setImage] = useState<string | undefined>(undefined);
   const [nr17Success, setNr17Success] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filteredBlocks = blocks.filter((b) =>
+    b.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   const marcacaoOpts = [{ label: "Atende" }, { label: "Não atende" }, { label: "Não se aplica" }];
 
@@ -168,21 +173,40 @@ export default function BlocksPage() {
         </div>
       )}
 
+      {/* Busca */}
+      {blocks.length > 0 && (
+        <div className="relative mb-6">
+          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <input
+            type="text"
+            placeholder="Buscar bloco pelo nome..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+          />
+        </div>
+      )}
+
       {blocks.length === 0 ? (
         <div className="text-center py-20 text-slate-400">
           <FiGrid size={48} className="mx-auto mb-4 opacity-50" />
           <p className="text-lg">Nenhum bloco criado ainda.</p>
           <p className="text-sm mt-1">Clique em &quot;Novo Bloco&quot; para começar.</p>
         </div>
+      ) : filteredBlocks.length === 0 ? (
+        <div className="text-center py-16 text-slate-400">
+          <FiSearch size={48} className="mx-auto mb-4 opacity-50" />
+          <p>Nenhum bloco encontrado para &ldquo;{search}&rdquo;.</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {blocks.map((block) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+          {filteredBlocks.map((block) => (
             <div
               key={block.id}
               onClick={() => router.push(`/blocks/${block.id}`)}
-              className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md hover:border-emerald-300 cursor-pointer transition-all group"
+              className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden hover:shadow-md hover:border-emerald-300 cursor-pointer transition-all group"
             >
-              <div className="h-40 bg-slate-100 flex items-center justify-center overflow-hidden">
+              <div className="h-24 bg-slate-100 flex items-center justify-center overflow-hidden">
                 {block.image ? (
                   <img
                     src={block.image}
@@ -190,26 +214,25 @@ export default function BlocksPage() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <FiImage size={40} className="text-slate-300" />
+                  <FiImage size={24} className="text-slate-300" />
                 )}
               </div>
-              <div className="p-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="font-semibold text-slate-800 group-hover:text-emerald-700 transition-colors">
+              <div className="p-2.5">
+                <div className="flex items-start justify-between gap-1">
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-slate-800 text-xs leading-tight group-hover:text-emerald-700 transition-colors truncate">
                       {block.name}
                     </h3>
-                    <p className="text-sm text-slate-500 mt-1">
-                      {block.questions.length}{" "}
-                      {block.questions.length === 1 ? "pergunta" : "perguntas"}
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      {block.questions.length} {block.questions.length === 1 ? "pergunta" : "perguntas"}
                     </p>
                   </div>
                   <button
                     onClick={(e) => handleDelete(e, block.id)}
-                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors shrink-0"
                     title="Excluir bloco"
                   >
-                    <FiTrash2 size={16} />
+                    <FiTrash2 size={12} />
                   </button>
                 </div>
               </div>
