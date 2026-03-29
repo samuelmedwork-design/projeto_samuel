@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
 import type { FilledBlock, FilledAnswer } from "@/contexts/DataContext";
 import { FiArrowLeft, FiTrash2, FiEdit2, FiSave, FiDownload, FiX } from "react-icons/fi";
-import { exportToDocx } from "@/lib/export";
+import { exportChecklistDocx, type DocxChecklistData } from "@/lib/export";
 
 const WORK_RELATION_LABELS: Record<string, string> = {
   ja_inicia_com_dor: "Já inicio o trabalho com essa dor",
@@ -69,6 +69,40 @@ export default function AssessmentDetailPage() {
       next[blockIdx] = { ...next[blockIdx], blockRecommendation: value };
       return next;
     });
+  };
+
+  const handleDocx = () => {
+    if (!assessment || !company) return;
+    const data: DocxChecklistData = {
+      companyName: company.name,
+      companyCnpj: company.cnpj,
+      companyCity: company.city,
+      date: new Date(assessment.createdAt).toLocaleDateString("pt-BR"),
+      logoUrl: "/logo-horizontal.png",
+      assessments: [{
+        templateName: assessment.templateName,
+        sector: sector?.name || "—",
+        position: position?.name || "—",
+        workstation: assessment.workstation || "",
+        worker: assessment.observedWorker || "",
+        date: new Date(assessment.createdAt).toLocaleDateString("pt-BR"),
+        blocks: (assessment.filledBlocks || []).map((fb) => ({
+          name: fb.blockName,
+          image: fb.image,
+          answers: (fb.answers || []).map((ans) => ({
+            question: ans.questionText,
+            value: ans.value,
+            type: ans.type,
+            evidence: ans.evidence,
+            recommendation: ans.recommendation,
+            photos: ans.photos,
+          })),
+          blockRecommendation: fb.blockRecommendation,
+        })),
+        generalNotes: assessment.generalNotes,
+      }],
+    };
+    exportChecklistDocx(data, `avaliacao-${assessment.templateName}`);
   };
 
   const handleDelete = async () => {
@@ -138,7 +172,7 @@ export default function AssessmentDetailPage() {
                 className="flex items-center gap-2 px-4 py-2 text-sm bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition-colors font-medium">
                 <FiDownload size={14} /> PDF
               </button>
-              <button onClick={() => exportToDocx("print-area", `avaliacao-${assessment.templateName}`)}
+              <button onClick={handleDocx}
                 className="flex items-center gap-2 px-4 py-2 text-sm bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors font-medium">
                 <FiDownload size={14} /> DOCX
               </button>

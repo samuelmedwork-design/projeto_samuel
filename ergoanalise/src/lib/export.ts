@@ -36,6 +36,36 @@ function wrapDocx(body: string): string {
     <body>${body}</body></html>`;
 }
 
+// Converte URL de imagem para base64 data URL
+async function toBase64(url: string): Promise<string> {
+  if (!url) return "";
+  // Já é base64
+  if (url.startsWith("data:")) return url;
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return url;
+  }
+}
+
+// Converte todas as imagens referenciadas para base64
+async function resolveImages(html: string): Promise<string> {
+  const imgRegex = /src="(\/[^"]+)"/g;
+  const matches = [...html.matchAll(imgRegex)];
+  let result = html;
+  for (const match of matches) {
+    const b64 = await toBase64(match[1]);
+    result = result.replace(match[0], `src="${b64}"`);
+  }
+  return result;
+}
+
 function downloadDoc(html: string, filename: string) {
   const blob = new Blob([html], { type: "application/msword" });
   const url = URL.createObjectURL(blob);
@@ -47,10 +77,11 @@ function downloadDoc(html: string, filename: string) {
 }
 
 // Exportação genérica por element ID (fallback)
-export function exportToDocx(elementId: string, filename: string) {
+export async function exportToDocx(elementId: string, filename: string) {
   const el = document.getElementById(elementId);
   if (!el) return;
-  downloadDoc(wrapDocx(el.innerHTML), filename);
+  const html = await resolveImages(wrapDocx(el.innerHTML));
+  downloadDoc(html, filename);
 }
 
 // ─── Exportação: Relatório de Checklists ───────────────────────────
@@ -77,11 +108,14 @@ export interface DocxChecklistData {
   }[];
 }
 
-export function exportChecklistDocx(data: DocxChecklistData, filename: string) {
+export async function exportChecklistDocx(data: DocxChecklistData, filename: string) {
   let html = "";
 
   // Logo
-  if (data.logoUrl) html += `<div class="center"><img src="${data.logoUrl}" style="height:50pt;" /></div><br/>`;
+  if (data.logoUrl) {
+    const logoB64 = await toBase64(data.logoUrl);
+    html += `<div class="center"><img src="${logoB64}" style="height:50pt;" /></div><br/>`;
+  }
 
   // Cabeçalho
   html += `<h1>Relatório de Checklists Técnicos</h1>`;
@@ -167,10 +201,13 @@ const WORK_REL: Record<string, string> = {
   sem_relacao: "Não tem relação com o trabalho",
 };
 
-export function exportSurveyDocx(data: DocxSurveyData, filename: string) {
+export async function exportSurveyDocx(data: DocxSurveyData, filename: string) {
   let html = "";
 
-  if (data.logoUrl) html += `<div class="center"><img src="${data.logoUrl}" style="height:50pt;" /></div><br/>`;
+  if (data.logoUrl) {
+    const logoB64 = await toBase64(data.logoUrl);
+    html += `<div class="center"><img src="${logoB64}" style="height:50pt;" /></div><br/>`;
+  }
 
   html += `<h1>Relatório de Queixas de Dores</h1>`;
   html += `<table class="borderless"><tr>
@@ -255,10 +292,13 @@ export interface DocxAnthroData {
   }[];
 }
 
-export function exportAnthroDocx(data: DocxAnthroData, filename: string) {
+export async function exportAnthroDocx(data: DocxAnthroData, filename: string) {
   let html = "";
 
-  if (data.logoUrl) html += `<div class="center"><img src="${data.logoUrl}" style="height:50pt;" /></div><br/>`;
+  if (data.logoUrl) {
+    const logoB64 = await toBase64(data.logoUrl);
+    html += `<div class="center"><img src="${logoB64}" style="height:50pt;" /></div><br/>`;
+  }
 
   html += `<h1>Relatório Antropométrico</h1>`;
   html += `<p><span class="label">Empresa:</span> <b>${data.companyName}</b> | <span class="label">Gerado em:</span> ${data.date}</p><hr/>`;
