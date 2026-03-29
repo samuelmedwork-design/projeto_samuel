@@ -213,7 +213,7 @@ export async function exportChecklistDocx(data: DocxChecklistData, filename: str
       html += `<h3>${block.name}</h3>`;
       if (block.image) {
         const cid = await builder.addImage(block.image);
-        html += `<img src="${cid}" style="width:80pt; height:auto; margin-bottom:4pt;" /><br/>`;
+        html += `<img src="${cid}" width="100" height="100" style="margin-bottom:4pt;" /><br/>`;
       }
 
       html += `<table class="bordered">`;
@@ -230,7 +230,7 @@ export async function exportChecklistDocx(data: DocxChecklistData, filename: str
         if (a.photos && a.photos.length > 0) {
           for (const photo of a.photos) {
             const cid = await builder.addImage(photo);
-            obs += `<br/><img src="${cid}" style="max-width:120pt; max-height:90pt;" />`;
+            obs += `<br/><img src="${cid}" width="150" height="110" />`;
           }
         }
 
@@ -324,7 +324,7 @@ export async function exportSurveyDocx(data: DocxSurveyData, filename: string) {
     let col2 = "";
     if (s.bodyMapImage) {
       const cid = await builder.addImage(s.bodyMapImage);
-      col2 = `<div class="center"><img src="${cid}" style="width:100pt; height:auto;" /></div>`;
+      col2 = `<div class="center"><img src="${cid}" width="120" height="280" /></div>`;
     } else {
       col2 = `<div class="center gray" style="padding:20pt 0;">Sem diagrama</div>`;
     }
@@ -414,7 +414,7 @@ export async function exportAnthroDocx(data: DocxAnthroData, filename: string) {
       let col2 = "";
       if (w.rangeImage) {
         const cid = await builder.addImage(w.rangeImage);
-        col2 = `<img src="${cid}" style="max-width:300px; max-height:250px;" />`;
+        col2 = `<img src="${cid}" width="300" height="250" />`;
       } else {
         col2 = `<span class="gray">Sem imagem</span>`;
       }
