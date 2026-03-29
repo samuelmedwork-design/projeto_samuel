@@ -2,14 +2,16 @@
 import { useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
-import { FiPlus, FiCopy, FiCheck, FiLink, FiLayers, FiUpload, FiFileText, FiEdit2, FiUsers, FiClipboard } from "react-icons/fi";
+import { FiPlus, FiCopy, FiCheck, FiLink, FiLayers, FiUpload, FiFileText, FiEdit2, FiUsers, FiClipboard, FiTrash2 } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import * as XLSX from "xlsx";
+import { useToast } from "@/components/Toast";
 
 export default function StructurePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { companies, sectors, positions, surveys, addSector, addPosition, updateCompany } = useData();
+  const { companies, sectors, positions, surveys, addSector, deleteSector, addPosition, deletePosition, updateCompany } = useData();
+  const { toast } = useToast();
   const company = companies.find((c) => c.id === id);
 
   const [sectorName, setSectorName] = useState("");
@@ -51,6 +53,7 @@ export default function StructurePage() {
     if (!sectorName.trim()) return;
     await addSector({ companyId: id, name: sectorName.trim() });
     setSectorName("");
+    toast("Setor criado com sucesso!");
   };
 
   const handleAddPosition = async (e: React.FormEvent) => {
@@ -58,6 +61,7 @@ export default function StructurePage() {
     if (!posName.trim() || !selectedSector) return;
     await addPosition({ companyId: id, sectorId: selectedSector, name: posName.trim() });
     setPosName("");
+    toast("Cargo criado com sucesso!");
   };
 
   // Gera link com dados embarcados para funcionar sem autenticação
@@ -329,9 +333,15 @@ export default function StructurePage() {
               <p className="text-slate-400 text-sm py-4 text-center">Nenhum setor cadastrado.</p>
             ) : (
               companySectors.map((s) => (
-                <div key={s.id} className="bg-white border border-slate-200 rounded-lg p-4">
-                  <p className="font-medium text-slate-800">{s.name}</p>
-                  <p className="text-xs text-slate-400 mt-1">{sectorPositions(s.id).length} cargo(s)</p>
+                <div key={s.id} className="bg-white border border-slate-200 rounded-lg p-4 flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-slate-800">{s.name}</p>
+                    <p className="text-xs text-slate-400 mt-1">{sectorPositions(s.id).length} cargo(s)</p>
+                  </div>
+                  <button onClick={() => { if (confirm(`Excluir o setor "${s.name}" e todos os seus cargos?`)) deleteSector(s.id); }}
+                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Excluir setor">
+                    <FiTrash2 size={15} />
+                  </button>
                 </div>
               ))
             )}
@@ -367,9 +377,15 @@ export default function StructurePage() {
           <div className="space-y-2">
             {companySectors.map((s) =>
               sectorPositions(s.id).map((p) => (
-                <div key={p.id} className="bg-white border border-slate-200 rounded-lg p-4">
-                  <p className="font-medium text-slate-800">{p.name}</p>
-                  <p className="text-xs text-slate-400 mt-1">Setor: {s.name}</p>
+                <div key={p.id} className="bg-white border border-slate-200 rounded-lg p-4 flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-slate-800">{p.name}</p>
+                    <p className="text-xs text-slate-400 mt-1">Setor: {s.name}</p>
+                  </div>
+                  <button onClick={() => { if (confirm(`Excluir o cargo "${p.name}"?`)) deletePosition(p.id); }}
+                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Excluir cargo">
+                    <FiTrash2 size={15} />
+                  </button>
                 </div>
               ))
             )}

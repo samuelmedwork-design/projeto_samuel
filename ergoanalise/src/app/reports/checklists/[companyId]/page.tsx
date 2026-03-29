@@ -13,12 +13,16 @@ export default function ChecklistReportPage() {
 
   const [filterSector, setFilterSector] = useState("");
   const [filterPosition, setFilterPosition] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const companySectors = sectors.filter((s) => s.companyId === companyId);
   const companyAssessments = assessments.filter((a) => {
     if (a.companyId !== companyId) return false;
     if (filterSector && a.sectorId !== filterSector) return false;
     if (filterPosition && a.positionId !== filterPosition) return false;
+    if (startDate && a.createdAt < startDate) return false;
+    if (endDate && a.createdAt > endDate + "T23:59:59") return false;
     return true;
   });
 
@@ -94,7 +98,7 @@ export default function ChecklistReportPage() {
           <FiFilter className="text-slate-500" size={16} />
           <h3 className="font-semibold text-slate-800 text-sm">Filtros</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Setor</label>
             <select value={filterSector} onChange={(e) => { setFilterSector(e.target.value); setFilterPosition(""); }}
@@ -110,6 +114,16 @@ export default function ChecklistReportPage() {
               <option value="">Todos os cargos</option>
               {filteredPositions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">De</label>
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Até</label>
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm" />
           </div>
         </div>
       </div>

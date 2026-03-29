@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
 import { FiArrowLeft, FiDownload, FiUser, FiImage } from "react-icons/fi";
@@ -11,9 +11,17 @@ export default function AnthropometryReportPage() {
   const { companies, surveys, anthroRanges } = useData();
   const company = companies.find((c) => c.id === companyId);
 
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
   const companySurveys = useMemo(
-    () => surveys.filter((s) => s.companyId === companyId),
-    [surveys, companyId]
+    () => surveys.filter((s) => {
+      if (s.companyId !== companyId) return false;
+      if (startDate && s.createdAt < startDate) return false;
+      if (endDate && s.createdAt > endDate + "T23:59:59") return false;
+      return true;
+    }),
+    [surveys, companyId, startDate, endDate]
   );
 
   const groupedByPosition = useMemo(() => {
@@ -90,6 +98,19 @@ export default function AnthropometryReportPage() {
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
             <FiDownload size={16} /> DOCX
           </button>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4 mb-6 no-print">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">De</label>
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+            className="px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Até</label>
+          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+            className="px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm" />
         </div>
       </div>
 

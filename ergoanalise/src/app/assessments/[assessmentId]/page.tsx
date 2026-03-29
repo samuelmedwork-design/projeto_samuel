@@ -5,6 +5,7 @@ import { useData } from "@/contexts/DataContext";
 import type { FilledBlock, FilledAnswer } from "@/contexts/DataContext";
 import { FiArrowLeft, FiTrash2, FiEdit2, FiSave, FiDownload, FiX } from "react-icons/fi";
 import { exportChecklistDocx, type DocxChecklistData } from "@/lib/export";
+import { useToast } from "@/components/Toast";
 
 const WORK_RELATION_LABELS: Record<string, string> = {
   ja_inicia_com_dor: "Já inicio o trabalho com essa dor",
@@ -17,6 +18,7 @@ export default function AssessmentDetailPage() {
   const { assessmentId } = useParams<{ assessmentId: string }>();
   const router = useRouter();
   const { assessments, companies, sectors, positions, updateAssessment, deleteAssessment } = useData();
+  const { toast } = useToast();
 
   const assessment = assessments.find((a) => a.id === assessmentId);
   const company = assessment ? companies.find((c) => c.id === assessment.companyId) : null;
@@ -52,6 +54,7 @@ export default function AssessmentDetailPage() {
     });
     setSaving(false);
     setEditing(false);
+    toast("Avaliação salva com sucesso!");
   };
 
   const updateEditAnswer = (blockIdx: number, answerIdx: number, updates: Partial<FilledAnswer>) => {

@@ -16,7 +16,7 @@ export interface ManualLoadData { performs: boolean; weightLevel: string; timePe
 
 export interface SurveyResponse {
   id: string; companyId: string; workerName: string; sector: string; position: string;
-  height: number; ergonomicRisks: string[]; painAreas: PainArea[];
+  height: number; weight?: number; sex?: string; ergonomicRisks: string[]; painAreas: PainArea[];
   manualLoad: ManualLoadData; signature?: string; createdAt: string;
 }
 
@@ -83,7 +83,9 @@ interface DataContextType {
   addCompany: (c: Omit<Company, "id">) => Promise<Company>;
   updateCompany: (id: string, data: Partial<Company>) => Promise<void>;
   addSector: (s: Omit<Sector, "id">) => Promise<Sector>;
+  deleteSector: (id: string) => Promise<void>;
   addPosition: (p: Omit<Position, "id">) => Promise<Position>;
+  deletePosition: (id: string) => Promise<void>;
   addSurvey: (s: Omit<SurveyResponse, "id" | "createdAt">) => Promise<void>;
   updateSurvey: (id: string, data: Partial<SurveyResponse>) => Promise<void>;
   deleteSurvey: (id: string) => Promise<void>;
@@ -120,7 +122,8 @@ function mapPosition(r: any): Position { return { id: r.id, sectorId: r.sector_i
 function mapSurvey(r: any): SurveyResponse {
   return {
     id: r.id, companyId: r.company_id, workerName: r.worker_name, sector: r.sector,
-    position: r.position, height: r.height, ergonomicRisks: r.ergonomic_risks || [],
+    position: r.position, height: r.height, weight: r.weight, sex: r.sex,
+    ergonomicRisks: r.ergonomic_risks || [],
     painAreas: r.pain_areas || [], manualLoad: r.manual_load || { performs: false, weightLevel: "", timePercentage: "", effortFrequency: "", gripQuality: "", workPace: "", dailyDuration: "" },
     signature: r.signature, createdAt: r.created_at,
   };
@@ -281,6 +284,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return sector;
   };
 
+  const deleteSector = async (id: string) => {
+    await supabase.from("sectors").delete().eq("id", id);
+    setSectors((prev) => prev.filter((s) => s.id !== id));
+    setPositions((prev) => prev.filter((p) => p.sectorId !== id));
+  };
+
   // ── Positions ──
   const addPosition = async (p: Omit<Position, "id">) => {
     const { data, error } = await supabase.from("positions").insert({ sector_id: p.sectorId, company_id: p.companyId, name: p.name }).select().single();
@@ -288,6 +297,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const pos = mapPosition(data);
     setPositions((prev) => [...prev, pos]);
     return pos;
+  };
+
+  const deletePosition = async (id: string) => {
+    await supabase.from("positions").delete().eq("id", id);
+    setPositions((prev) => prev.filter((p) => p.id !== id));
   };
 
   // ── Surveys ──
@@ -451,7 +465,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     <DataContext.Provider
       value={{
         user, companies, sectors, positions, surveys, assessments, actions, blocks, templates, anthroRanges, loading,
-        login, register, logout, addCompany, updateCompany, addSector, addPosition,
+        login, register, logout, addCompany, updateCompany, addSector, deleteSector, addPosition, deletePosition,
         addSurvey, updateSurvey, deleteSurvey, addAssessment, updateAssessment, deleteAssessment, addAction, updateAction, deleteAction,
         addBlock, updateBlock, deleteBlock, addTemplate, updateTemplate, deleteTemplate,
         addAnthroRange, updateAnthroRange, deleteAnthroRange, refreshData,

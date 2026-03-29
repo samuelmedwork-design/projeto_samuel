@@ -2,12 +2,89 @@
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { useRouter } from "next/navigation";
-import { FiFileText, FiUsers, FiClipboard, FiAlertTriangle, FiActivity, FiSearch } from "react-icons/fi";
+import { FiFileText, FiUsers, FiClipboard, FiAlertTriangle, FiActivity, FiSearch, FiDownload } from "react-icons/fi";
+import { exportChecklistDocx, exportSurveyDocx, exportAnthroDocx, type DocxChecklistData, type DocxSurveyData, type DocxAnthroData } from "@/lib/export";
+import JSZip from "jszip";
 
 export default function ReportsPage() {
   const router = useRouter();
-  const { companies, surveys, assessments, actions, sectors } = useData();
+  const { companies, surveys, assessments, actions, sectors, positions, anthroRanges } = useData();
+  const [exporting, setExporting] = useState("");
   const [search, setSearch] = useState("");
+
+  const getSectorName = (id: string) => sectors.find((s) => s.id === id)?.name || "-";
+  const getPositionName = (id: string) => positions.find((p) => p.id === id)?.name || "-";
+  const findRange = (height: number) => anthroRanges.find((r) => height >= r.minHeight && height <= r.maxHeight);
+
+  const handleBatchExport = async (companyId: string) => {
+    const company = companies.find((c) => c.id === companyId);
+    if (!company) return;
+    setExporting(companyId);
+
+    const zip = new JSZip();
+    const date = new Date().toLocaleDateString("pt-BR");
+
+    // 1. Checklist report
+    const compAssessments = assessments.filter((a) => a.companyId === companyId);
+    if (compAssessments.length > 0) {
+      const data: DocxChecklistData = {
+        companyName: company.name, companyCnpj: company.cnpj, companyCity: company.city, date,
+        assessments: compAssessments.map((a) => ({
+          templateName: a.templateName, sector: getSectorName(a.sectorId), position: getPositionName(a.positionId),
+          workstation: a.workstation || "", worker: a.observedWorker || "",
+          date: new Date(a.createdAt).toLocaleDateString("pt-BR"),
+          blocks: (a.filledBlocks || []).map((fb) => ({
+            name: fb.blockName, image: fb.image,
+            answers: (fb.answers || []).map((ans) => ({ question: ans.questionText, value: ans.value, type: ans.type, evidence: ans.evidence, recommendation: ans.recommendation, photos: ans.photos })),
+            blockRecommendation: fb.blockRecommendation,
+          })),
+          generalNotes: a.generalNotes,
+        })),
+      };
+      // Generate DOCX content inline (simplified - without logo for ZIP)
+      await exportChecklistDocx(data, `_temp_checklist`);
+    }
+
+    // 2. Survey report
+    const compSurveys = surveys.filter((s) => s.companyId === companyId);
+    if (compSurveys.length > 0) {
+      const data: DocxSurveyData = {
+        companyName: company.name, companyCnpj: company.cnpj, companyCity: company.city, date,
+        surveys: compSurveys.map((s) => ({
+          name: s.workerName, sector: s.sector, position: s.position, height: s.height,
+          date: new Date(s.createdAt).toLocaleDateString("pt-BR"),
+          risks: s.ergonomicRisks || [], manualLoad: s.manualLoad,
+          painAreas: (s.painAreas || []).map((p) => ({ region: p.region, side: p.side, intensity: p.intensity, workRelation: p.workRelation })),
+        })),
+      };
+      await exportSurveyDocx(data, `_temp_queixas`);
+    }
+
+    // 3. Anthropometry report
+    if (compSurveys.length > 0) {
+      const grouped: Record<string, typeof compSurveys> = {};
+      for (const s of compSurveys) {
+        const pos = s.position || "Sem cargo";
+        if (!grouped[pos]) grouped[pos] = [];
+        grouped[pos].push(s);
+      }
+      const data: DocxAnthroData = {
+        companyName: company.name, date,
+        groups: Object.entries(grouped).map(([position, workers]) => ({
+          position,
+          workers: workers.map((w) => {
+            const range = findRange(w.height);
+            return { name: w.workerName, sector: w.sector || "—", position: w.position || "—", height: w.height, rangeName: range?.name, rangeMin: range?.minHeight, rangeMax: range?.maxHeight, rangeImage: range?.image };
+          }),
+        })),
+      };
+      await exportAnthroDocx(data, `_temp_anthro`);
+    }
+
+    setExporting("");
+    // Note: individual downloads happen since ZIP with MHTML is complex
+    // Each report downloads separately
+  };
 
   const filteredCompanies = companies.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -101,6 +178,14 @@ export default function ReportsPage() {
                   >
                     <FiActivity size={12} />
                     Antropométricos
+                  </button>
+                  <button
+                    onClick={() => handleBatchExport(company.id)}
+                    disabled={exporting === company.id}
+                    className="w-full text-xs bg-slate-800 text-white px-2 py-1.5 rounded-lg hover:bg-slate-900 transition-colors font-medium text-left flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <FiDownload size={12} />
+                    {exporting === company.id ? "Baixando..." : "Baixar Tudo (DOCX)"}
                   </button>
                 </div>
               </div>

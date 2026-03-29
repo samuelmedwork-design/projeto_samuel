@@ -62,6 +62,13 @@ export default function SurveyPage() {
     return sec ? sec.positions : [];
   };
 
+  // Registra service worker para cache offline
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  }, []);
+
   const [step, setStep] = useState(0);
   // Bloco 1 — Identificação
   const [workerName, setWorkerName] = useState("");
@@ -217,9 +224,10 @@ export default function SurveyPage() {
     return errors.length === 0;
   };
 
-  // ── Submit (insere direto no Supabase sem auth) ──
+  // ── Submit (insere direto no Supabase, com fallback offline) ──
+  const [submitError, setSubmitError] = useState("");
+
   const handleSubmit = async () => {
-    // Converte painAreas do form para o tipo final
     const finalPainAreas: PainArea[] = painAreas.map((p) => ({
       region: p.region,
       side: (p.side || "nsa") as Laterality,
@@ -227,7 +235,7 @@ export default function SurveyPage() {
       workRelation: (p.workRelation || "sem_relacao") as WorkRelation,
     }));
 
-    await supabase.from("surveys").insert({
+    const surveyData = {
       company_id: embedded?.id || companyId,
       worker_name: workerName,
       sector: companySectorsData.find((s) => s.id === sector)?.name || sector,
@@ -239,8 +247,37 @@ export default function SurveyPage() {
       pain_areas: finalPainAreas,
       manual_load: manualLoad,
       signature,
-    });
-    setSubmitted(true);
+    };
+
+    try {
+      const { error } = await supabase.from("surveys").insert(surveyData);
+      if (error) throw error;
+      setSubmitted(true);
+    } catch {
+      // Offline: salva no IndexedDB para enviar depois
+      try {
+        const db = await new Promise<IDBDatabase>((resolve, reject) => {
+          const req = indexedDB.open("ergoanalise_offline", 1);
+          req.onupgradeneeded = () => {
+            const d = req.result;
+            if (!d.objectStoreNames.contains("pending_surveys")) {
+              d.createObjectStore("pending_surveys", { keyPath: "id", autoIncrement: true });
+            }
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+        const tx = db.transaction("pending_surveys", "readwrite");
+        tx.objectStore("pending_surveys").add({
+          data: surveyData,
+          timestamp: new Date().toISOString(),
+        });
+        setSubmitted(true);
+        setSubmitError("offline");
+      } catch {
+        setSubmitError("Erro ao enviar. Verifique sua conexão e tente novamente.");
+      }
+    }
   };
 
   if (!companyName) {
@@ -269,8 +306,14 @@ export default function SurveyPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-slate-800 mb-1">Questionário Enviado!</h1>
-            <p className="text-slate-500">Obrigado por responder, {workerName}.</p>
+            <h1 className="text-2xl font-bold text-slate-800 mb-1">
+              {submitError === "offline" ? "Questionário Salvo!" : "Questionário Enviado!"}
+            </h1>
+            <p className="text-slate-500">
+              {submitError === "offline"
+                ? "Sua resposta foi salva localmente e será enviada automaticamente quando houver conexão com a internet."
+                : `Obrigado por responder, ${workerName}.`}
+            </p>
           </div>
 
           {/* Relatório resumido */}

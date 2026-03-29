@@ -187,6 +187,10 @@ create policy "Users insert templates" on templates for insert with check (auth.
 create policy "Users manage own anthro" on anthro_ranges for all using (auth.uid() = user_id);
 create policy "Users insert anthro" on anthro_ranges for insert with check (auth.uid() = user_id);
 
+-- Colunas adicionais para questionários (sexo e peso)
+ALTER TABLE surveys ADD COLUMN IF NOT EXISTS sex text;
+ALTER TABLE surveys ADD COLUMN IF NOT EXISTS weight numeric;
+
 -- ============================================================
 -- Função pública para o questionário (permite acesso anônimo)
 -- ============================================================

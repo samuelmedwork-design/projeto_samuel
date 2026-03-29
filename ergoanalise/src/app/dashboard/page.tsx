@@ -1,7 +1,7 @@
 "use client";
 import { useData } from "@/contexts/DataContext";
 import { useRouter } from "next/navigation";
-import { FiHome, FiUsers, FiClipboard, FiAlertCircle } from "react-icons/fi";
+import { FiHome, FiUsers, FiClipboard, FiAlertCircle, FiAlertTriangle, FiClock } from "react-icons/fi";
 import { useMemo } from "react";
 
 /* ─── Reusable SVG horizontal bar chart ─────────────────────────────── */
@@ -92,6 +92,15 @@ export default function DashboardPage() {
   const router = useRouter();
 
   const pendingActions = actions.filter((a) => a.status === "pendente");
+  const overdueActions = actions.filter((a) => a.status !== "concluido" && a.deadline && new Date(a.deadline) < new Date());
+  const totalNC = useMemo(() => {
+    return assessments.reduce((total, a) =>
+      total + (a.filledBlocks || []).reduce((sum, fb) =>
+        sum + (fb.answers || []).filter(
+          (ans) => ans.type === "marcacao" && ans.value.toLowerCase().includes("não") && !ans.value.toLowerCase().includes("não se aplica")
+        ).length, 0
+      ), 0);
+  }, [assessments]);
 
   /* Aggregate pain areas across ALL surveys */
   const topPainRegions = useMemo(() => {
@@ -142,11 +151,25 @@ export default function DashboardPage() {
       text: "text-amber-700",
     },
     {
+      label: "Não conformidades",
+      value: totalNC,
+      icon: FiAlertTriangle,
+      bg: "bg-orange-100",
+      text: "text-orange-700",
+    },
+    {
       label: "Ações pendentes",
       value: pendingActions.length,
       icon: FiAlertCircle,
       bg: "bg-red-100",
       text: "text-red-700",
+    },
+    {
+      label: "Ações vencidas",
+      value: overdueActions.length,
+      icon: FiClock,
+      bg: "bg-purple-100",
+      text: "text-purple-700",
     },
   ];
 
@@ -159,7 +182,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
         {summaryCards.map((card) => (
           <div
             key={card.label}
