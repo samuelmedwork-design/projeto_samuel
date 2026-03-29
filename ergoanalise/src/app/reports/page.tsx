@@ -1,25 +1,51 @@
 "use client";
+import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { useRouter } from "next/navigation";
-import { FiFileText, FiUsers, FiClipboard, FiAlertTriangle, FiActivity } from "react-icons/fi";
+import { FiFileText, FiUsers, FiClipboard, FiAlertTriangle, FiActivity, FiSearch } from "react-icons/fi";
 
 export default function ReportsPage() {
   const router = useRouter();
   const { companies, surveys, assessments, actions, sectors } = useData();
+  const [search, setSearch] = useState("");
+
+  const filteredCompanies = companies.filter((c) =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    c.cnpj.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold text-slate-800 mb-2">Central de Relatórios</h1>
-      <p className="text-slate-500 text-sm mb-8">Visualização consolidada e geração de laudos</p>
+      <p className="text-slate-500 text-sm mb-6">Visualização consolidada e geração de laudos</p>
 
-      {companies.length === 0 ? (
+      {/* Busca por empresa ou CNPJ */}
+      {companies.length > 0 && (
+        <div className="relative mb-6">
+          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <input
+            type="text"
+            placeholder="Buscar por nome da empresa ou CNPJ..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+          />
+        </div>
+      )}
+
+      {filteredCompanies.length === 0 && companies.length === 0 ? (
         <div className="text-center py-16 text-slate-400">
           <FiFileText size={48} className="mx-auto mb-4 opacity-50" />
           <p>Nenhuma empresa cadastrada ainda.</p>
         </div>
+      ) : filteredCompanies.length === 0 ? (
+        <div className="text-center py-16 text-slate-400">
+          <FiSearch size={48} className="mx-auto mb-4 opacity-50" />
+          <p>Nenhuma empresa encontrada para &ldquo;{search}&rdquo;.</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {companies.map((company) => {
+          {filteredCompanies.map((company) => {
             const companySurveys = surveys.filter((s) => s.companyId === company.id);
             const companyAssessments = assessments.filter((a) => a.companyId === company.id);
             const companyActions = actions.filter((a) => a.companyId === company.id);

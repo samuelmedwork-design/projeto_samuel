@@ -66,16 +66,15 @@ export default function Sidebar() {
       `}>
         {/* Header */}
         <div className={`border-b border-slate-700 ${collapsed ? "p-2" : "p-3"}`}>
-          <div className={`bg-white rounded-lg flex items-center justify-center ${collapsed ? "p-1.5" : "p-2 w-full"}`}>
-            <img src="/logo-vertical.png" alt="ErgoAnálise" className={collapsed ? "h-8 w-auto" : "h-14 w-auto"} />
+          <div className={`bg-white rounded-lg flex items-center justify-center ${collapsed ? "p-1.5" : "px-2 py-2 w-full"}`}>
+            <img
+              src={collapsed ? "/logo-vertical.png" : "/logo-horizontal.png"}
+              alt="ErgoAnálise"
+              className={collapsed ? "h-8 w-auto" : "w-full h-auto"}
+            />
           </div>
           {!collapsed && (
-            <div className="mt-2 text-center">
-              <h1 className="text-lg font-bold tracking-tight">
-                <span className="text-emerald-400">Ergo</span>Análise
-              </h1>
-              <p className="text-xs text-slate-400">Sistema de AET</p>
-            </div>
+            <p className="text-xs text-slate-400 text-center mt-1.5">Sistema de AET</p>
           )}
           {/* Fechar no mobile */}
           {mobileOpen && (
