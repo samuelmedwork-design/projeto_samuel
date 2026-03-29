@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo, useRef, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
 import type { FilledAnswer, FilledBlock, ChecklistBlock } from "@/contexts/DataContext";
 import { FiArrowLeft, FiSave, FiCheck, FiAlertTriangle, FiCamera, FiX } from "react-icons/fi";
@@ -8,6 +8,7 @@ import { FiArrowLeft, FiSave, FiCheck, FiAlertTriangle, FiCamera, FiX } from "re
 export default function AssessmentFillPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     templates,
     blocks,
@@ -28,15 +29,12 @@ export default function AssessmentFillPage() {
       .filter(Boolean) as ChecklistBlock[];
   }, [template, blocks]);
 
-  // ── Identification state ──────────────────────────────────────────
-  const [companyId, setCompanyId] = useState("");
-  const [sectorId, setSectorId] = useState("");
-  const [positionId, setPositionId] = useState("");
+  // ── Identification from query params ──────────────────────────────
+  const companyId = searchParams.get("company") || "";
+  const sectorId = searchParams.get("sector") || "";
+  const positionIds = useMemo(() => (searchParams.get("positions") || "").split(",").filter(Boolean), [searchParams]);
   const [workstation, setWorkstation] = useState("");
   const [observedWorker, setObservedWorker] = useState("");
-
-  const companySectors = sectors.filter((s) => s.companyId === companyId);
-  const sectorPositions = positions.filter((p) => p.sectorId === sectorId);
 
   // ── Answers state ─────────────────────────────────────────────────
   // Keyed by `${blockId}::${questionId}`
@@ -162,7 +160,7 @@ export default function AssessmentFillPage() {
 
   // ── Handle save ───────────────────────────────────────────────────
   const handleSave = async () => {
-    if (!companyId || !sectorId || !positionId || !template) return;
+    if (!companyId || !sectorId || positionIds.length === 0 || !template) return;
 
     const filledBlocks: FilledBlock[] = templateBlocks.map((block) => {
       const filledAnswers: FilledAnswer[] = block.questions.map((q) => {
@@ -193,17 +191,20 @@ export default function AssessmentFillPage() {
       };
     });
 
-    await addAssessment({
-      companyId,
-      sectorId,
-      positionId,
-      templateId,
-      templateName: template.name,
-      workstation,
-      observedWorker,
-      filledBlocks,
-      generalNotes,
-    });
+    // Cria uma avaliação para cada cargo selecionado
+    for (const posId of positionIds) {
+      await addAssessment({
+        companyId,
+        sectorId,
+        positionId: posId,
+        templateId,
+        templateName: template.name,
+        workstation,
+        observedWorker,
+        filledBlocks,
+        generalNotes,
+      });
+    }
 
     setSaved(true);
   };
@@ -319,58 +320,22 @@ export default function AssessmentFillPage() {
         <h2 className="font-semibold text-slate-800 mb-4">Identificação</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Empresa *</label>
-            <select
-              value={companyId}
-              onChange={(e) => {
-                setCompanyId(e.target.value);
-                setSectorId("");
-                setPositionId("");
-              }}
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-            >
-              <option value="">Selecione</option>
-              {companies.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            <label className="block text-xs font-medium text-slate-500 mb-0.5">Empresa</label>
+            <p className="text-sm font-medium text-slate-800">{companies.find((c) => c.id === companyId)?.name || "—"}</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Setor *</label>
-            <select
-              value={sectorId}
-              onChange={(e) => {
-                setSectorId(e.target.value);
-                setPositionId("");
-              }}
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-              disabled={!companyId}
-            >
-              <option value="">Selecione</option>
-              {companySectors.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+            <label className="block text-xs font-medium text-slate-500 mb-0.5">Setor</label>
+            <p className="text-sm font-medium text-slate-800">{sectors.find((s) => s.id === sectorId)?.name || "—"}</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Cargo *</label>
-            <select
-              value={positionId}
-              onChange={(e) => setPositionId(e.target.value)}
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-              disabled={!sectorId}
-            >
-              <option value="">Selecione</option>
-              {sectorPositions.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
+            <label className="block text-xs font-medium text-slate-500 mb-0.5">Cargo(s)</label>
+            <div className="flex flex-wrap gap-1">
+              {positionIds.map((pid) => (
+                <span key={pid} className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded">
+                  {positions.find((p) => p.id === pid)?.name || pid}
+                </span>
               ))}
-            </select>
+            </div>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -593,9 +558,9 @@ export default function AssessmentFillPage() {
       {/* ── Save button ────────────────────────────────────────────── */}
       <button
         onClick={handleSave}
-        disabled={!companyId || !sectorId || !positionId}
+        disabled={!companyId || !sectorId || positionIds.length === 0}
         className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
-          !companyId || !sectorId || !positionId
+          !companyId || !sectorId || positionIds.length === 0
             ? "bg-slate-300 text-slate-500 cursor-not-allowed"
             : "bg-emerald-600 text-white hover:bg-emerald-700"
         }`}
