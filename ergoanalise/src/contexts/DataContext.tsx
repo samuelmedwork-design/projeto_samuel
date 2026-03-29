@@ -88,6 +88,7 @@ interface DataContextType {
   updateSurvey: (id: string, data: Partial<SurveyResponse>) => Promise<void>;
   deleteSurvey: (id: string) => Promise<void>;
   addAssessment: (a: Omit<Assessment, "id" | "createdAt">) => Promise<void>;
+  updateAssessment: (id: string, data: Partial<Assessment>) => Promise<void>;
   deleteAssessment: (id: string) => Promise<void>;
   addAction: (a: Omit<ActionItem, "id">) => Promise<void>;
   updateAction: (id: string, data: Partial<ActionItem>) => Promise<void>;
@@ -327,6 +328,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (data) setAssessments((prev) => [mapAssessment(data), ...prev]);
   };
 
+  const updateAssessment = async (id: string, d: Partial<Assessment>) => {
+    const update: any = {};
+    if (d.filledBlocks !== undefined) update.filled_blocks = d.filledBlocks;
+    if (d.generalNotes !== undefined) update.general_notes = d.generalNotes;
+    if (d.workstation !== undefined) update.workstation = d.workstation;
+    if (d.observedWorker !== undefined) update.observed_worker = d.observedWorker;
+    const { error } = await supabase.from("assessments").update(update).eq("id", id);
+    if (error) console.error("updateAssessment error:", error);
+    setAssessments((prev) => prev.map((a) => (a.id === id ? { ...a, ...d } : a)));
+  };
+
   const deleteAssessment = async (id: string) => {
     const { error } = await supabase.from("assessments").delete().eq("id", id);
     if (error) console.error("deleteAssessment error:", error);
@@ -440,7 +452,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       value={{
         user, companies, sectors, positions, surveys, assessments, actions, blocks, templates, anthroRanges, loading,
         login, register, logout, addCompany, updateCompany, addSector, addPosition,
-        addSurvey, updateSurvey, deleteSurvey, addAssessment, deleteAssessment, addAction, updateAction, deleteAction,
+        addSurvey, updateSurvey, deleteSurvey, addAssessment, updateAssessment, deleteAssessment, addAction, updateAction, deleteAction,
         addBlock, updateBlock, deleteBlock, addTemplate, updateTemplate, deleteTemplate,
         addAnthroRange, updateAnthroRange, deleteAnthroRange, refreshData,
       }}

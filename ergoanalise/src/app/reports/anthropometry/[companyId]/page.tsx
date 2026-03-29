@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
 import { FiArrowLeft, FiDownload, FiUser, FiImage } from "react-icons/fi";
+import { exportToDocx } from "@/lib/export";
 
 export default function AnthropometryReportPage() {
   const { companyId } = useParams<{ companyId: string }>();
@@ -54,16 +55,19 @@ export default function AnthropometryReportPage() {
             <p className="text-slate-500 text-sm">{company.name}</p>
           </div>
         </div>
-        <button
-          onClick={exportPDF}
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
-        >
-          <FiDownload size={16} />
-          Exportar PDF
-        </button>
+        <div className="flex gap-2">
+          <button onClick={exportPDF}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
+            <FiDownload size={16} /> PDF
+          </button>
+          <button onClick={() => exportToDocx("print-area", `antropometria-${company?.name || "relatorio"}`)}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
+            <FiDownload size={16} /> DOCX
+          </button>
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 p-6">
+      <div className="bg-white rounded-xl border border-slate-200 p-6" id="print-area">
         {/* PDF header */}
         <div className="mb-6 pb-4 border-b border-slate-200">
           <div className="flex justify-center mb-4">

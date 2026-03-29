@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
 import { FiArrowLeft, FiDownload, FiFilter } from "react-icons/fi";
+import { exportToDocx } from "@/lib/export";
 
 export default function ChecklistReportPage() {
   const { companyId } = useParams<{ companyId: string }>();
@@ -40,11 +41,16 @@ export default function ChecklistReportPage() {
           <FiArrowLeft size={18} /> Voltar
         </button>
         {companyAssessments.length > 0 && (
-          <button onClick={exportPDF}
-            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg hover:bg-red-700 transition-colors font-medium text-sm">
-            <FiDownload size={16} />
-            Baixar PDF - Relatório de Checklists
-          </button>
+          <div className="flex gap-2">
+            <button onClick={exportPDF}
+              className="flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg hover:bg-red-700 transition-colors font-medium text-sm">
+              <FiDownload size={16} /> PDF
+            </button>
+            <button onClick={() => exportToDocx("print-area", `checklists-${company?.name || "relatorio"}`)}
+              className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm">
+              <FiDownload size={16} /> DOCX
+            </button>
+          </div>
         )}
       </div>
 
@@ -75,7 +81,7 @@ export default function ChecklistReportPage() {
       </div>
 
       {/* Área capturada para PDF */}
-      <div className="bg-white">
+      <div className="bg-white" id="print-area">
         <div className="border-b border-slate-200 pb-4 mb-6 px-2">
           <div className="flex justify-center mb-4">
             <img src="/logo-horizontal.png" alt="ErgoAnálise" className="h-14 w-auto" />
