@@ -3,7 +3,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
 import BodyMap, { BodyMapLegend } from "@/components/BodyMap";
 import { FiArrowLeft, FiDownload } from "react-icons/fi";
-import { exportSurveyDocx, type DocxSurveyData } from "@/lib/export";
+import { exportSurveyDocx, svgToBase64, type DocxSurveyData } from "@/lib/export";
 
 const WORK_RELATION_LABELS: Record<string, string> = {
   ja_inicia_com_dor: "Já inicio o trabalho com essa dor",
@@ -19,15 +19,24 @@ export default function CompanyReportPage() {
   const company = companies.find((c) => c.id === companyId);
   const companySurveys = surveys.filter((s) => s.companyId === companyId);
 
-  const handleDocx = () => {
+  const handleDocx = async () => {
     if (!company) return;
+
+    // Captura os SVGs dos BodyMaps renderizados na página
+    const svgs = document.querySelectorAll<SVGSVGElement>("[data-bodymap]");
+    const bodyMapImages: string[] = [];
+    for (let i = 0; i < svgs.length; i++) {
+      const img = await svgToBase64(svgs[i]);
+      bodyMapImages.push(img);
+    }
+
     const data: DocxSurveyData = {
       companyName: company.name,
       companyCnpj: company.cnpj,
       companyCity: company.city,
       date: new Date().toLocaleDateString("pt-BR"),
       logoUrl: "/logo-horizontal.png",
-      surveys: companySurveys.map((s) => ({
+      surveys: companySurveys.map((s, idx) => ({
         name: s.workerName,
         sector: s.sector,
         position: s.position,
@@ -41,6 +50,7 @@ export default function CompanyReportPage() {
           intensity: p.intensity,
           workRelation: p.workRelation,
         })),
+        bodyMapImage: bodyMapImages[idx] || "",
       })),
     };
     exportSurveyDocx(data, `queixas-${company.name}`);

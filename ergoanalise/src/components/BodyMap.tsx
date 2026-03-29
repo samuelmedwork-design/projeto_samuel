@@ -79,7 +79,7 @@ export default function BodyMap({ painAreas, size = "md" }: BodyMapProps) {
   }
 
   return (
-    <svg viewBox="0 0 200 460" width={w} height={h} className="select-none">
+    <svg viewBox="0 0 200 460" width={w} height={h} className="select-none" data-bodymap="true">
       {/* ══ Fixed base silhouette ══ */}
       <g fill="#d4d4d4" stroke="#a3a3a3" strokeWidth="1" strokeLinejoin="round">
         {/* Head */}

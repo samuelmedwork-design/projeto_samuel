@@ -26,6 +26,28 @@ const DOCX_STYLES = `
   </style>
 `;
 
+// ─── SVG para PNG base64 ───────────────────────────────────────────
+export function svgToBase64(svgElement: SVGSVGElement): Promise<string> {
+  return new Promise((resolve) => {
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svgElement);
+    const svg64 = btoa(unescape(encodeURIComponent(svgString)));
+    const imgSrc = `data:image/svg+xml;base64,${svg64}`;
+
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth || 200;
+      canvas.height = img.naturalHeight || 460;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => resolve("");
+    img.src = imgSrc;
+  });
+}
+
 // ─── MHTML: embute imagens de forma que o Word entende ─────────────
 interface MhtmlImage {
   cid: string;
@@ -191,7 +213,7 @@ export async function exportChecklistDocx(data: DocxChecklistData, filename: str
       html += `<h3>${block.name}</h3>`;
       if (block.image) {
         const cid = await builder.addImage(block.image);
-        html += `<img src="${cid}" style="height:60pt; margin-bottom:4pt;" /><br/>`;
+        html += `<img src="${cid}" style="width:80pt; height:auto; margin-bottom:4pt;" /><br/>`;
       }
 
       html += `<table class="bordered">`;
@@ -247,6 +269,7 @@ export interface DocxSurveyData {
     risks: string[];
     manualLoad?: { performs: boolean; weightLevel?: string; timePercentage?: string; gripQuality?: string; workPace?: string; dailyDuration?: string };
     painAreas: { region: string; side: string; intensity: string; workRelation: string }[];
+    bodyMapImage?: string;
   }[];
 }
 
@@ -297,8 +320,14 @@ export async function exportSurveyDocx(data: DocxSurveyData, filename: string) {
       if (s.manualLoad.dailyDuration) col1 += `Duração: ${s.manualLoad.dailyDuration}<br/>`;
     }
 
-    // Coluna 2: Placeholder para diagrama
-    let col2 = `<div class="center gray" style="padding:20pt 0;">Diagrama<br/>Corporal</div>`;
+    // Coluna 2: Diagrama corporal
+    let col2 = "";
+    if (s.bodyMapImage) {
+      const cid = await builder.addImage(s.bodyMapImage);
+      col2 = `<div class="center"><img src="${cid}" style="width:100pt; height:auto;" /></div>`;
+    } else {
+      col2 = `<div class="center gray" style="padding:20pt 0;">Sem diagrama</div>`;
+    }
 
     // Coluna 3: Resumo das dores
     let col3 = "";
