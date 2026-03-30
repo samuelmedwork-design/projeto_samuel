@@ -247,8 +247,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   // ── Auth ──
   const login = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return !error;
+    const timeout = new Promise<{ error: { message: string } }>((resolve) =>
+      setTimeout(() => resolve({ error: { message: "Tempo limite excedido" } }), 15000)
+    );
+    const attempt = supabase.auth.signInWithPassword({ email, password });
+    const result = await Promise.race([attempt, timeout]);
+    return !result.error;
   };
 
   const register = async (name: string, email: string, password: string) => {

@@ -25,11 +25,11 @@ export default function LoginPage() {
       if (ok) {
         router.push("/dashboard");
       } else {
-        setError("E-mail ou senha incorretos.");
+        setError("E-mail ou senha incorretos. Se o problema persistir, o servidor pode estar lento — aguarde e tente novamente.");
         setSubmitting(false);
       }
     } catch {
-      setError("Erro ao conectar. Tente novamente.");
+      setError("Erro ao conectar ao servidor. Tente novamente em alguns segundos.");
       setSubmitting(false);
     }
   };
