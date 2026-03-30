@@ -250,32 +250,42 @@ export default function SurveyPage() {
     };
 
     try {
-      const { error } = await supabase.from("surveys").insert(surveyData);
-      if (error) throw error;
+      // Tenta com todos os campos (incluindo sex/weight)
+      let { error } = await supabase.from("surveys").insert(surveyData);
+      if (error) {
+        // Se falhar (colunas sex/weight podem não existir), tenta sem elas
+        const { sex: _s, weight: _w, ...fallbackData } = surveyData;
+        const retry = await supabase.from("surveys").insert(fallbackData);
+        if (retry.error) throw retry.error;
+      }
       setSubmitted(true);
-    } catch {
-      // Offline: salva no IndexedDB para enviar depois
-      try {
-        const db = await new Promise<IDBDatabase>((resolve, reject) => {
-          const req = indexedDB.open("ergoanalise_offline", 1);
-          req.onupgradeneeded = () => {
-            const d = req.result;
-            if (!d.objectStoreNames.contains("pending_surveys")) {
-              d.createObjectStore("pending_surveys", { keyPath: "id", autoIncrement: true });
-            }
-          };
-          req.onsuccess = () => resolve(req.result);
-          req.onerror = () => reject(req.error);
-        });
-        const tx = db.transaction("pending_surveys", "readwrite");
-        tx.objectStore("pending_surveys").add({
-          data: surveyData,
-          timestamp: new Date().toISOString(),
-        });
-        setSubmitted(true);
-        setSubmitError("offline");
-      } catch {
-        setSubmitError("Erro ao enviar. Verifique sua conexão e tente novamente.");
+    } catch (err) {
+      // Verifica se é realmente offline ou erro de rede
+      if (!navigator.onLine) {
+        try {
+          const db = await new Promise<IDBDatabase>((resolve, reject) => {
+            const req = indexedDB.open("ergoanalise_offline", 1);
+            req.onupgradeneeded = () => {
+              const d = req.result;
+              if (!d.objectStoreNames.contains("pending_surveys")) {
+                d.createObjectStore("pending_surveys", { keyPath: "id", autoIncrement: true });
+              }
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+          });
+          const tx = db.transaction("pending_surveys", "readwrite");
+          tx.objectStore("pending_surveys").add({
+            data: surveyData,
+            timestamp: new Date().toISOString(),
+          });
+          setSubmitted(true);
+          setSubmitError("offline");
+        } catch {
+          setSubmitError("Erro ao salvar offline. Tente novamente.");
+        }
+      } else {
+        setSubmitError("Erro ao enviar. Tente novamente.");
       }
     }
   };

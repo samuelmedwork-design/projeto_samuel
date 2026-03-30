@@ -65,6 +65,12 @@ export default function CompaniesPage() {
       setCnpjError("CNPJ inválido. Use o formato: 24.763.245/0001-25");
       return;
     }
+    const cnpjDigits = cnpj.replace(/\D/g, "");
+    const exists = companies.some((c) => c.cnpj.replace(/\D/g, "") === cnpjDigits);
+    if (exists) {
+      setCnpjError("Já existe uma empresa cadastrada com este CNPJ.");
+      return;
+    }
     await addCompany({ name, cnpj, city });
     setName(""); setCnpj(""); setCity(""); setCnpjError("");
     setShowModal(false);
