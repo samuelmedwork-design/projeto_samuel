@@ -232,9 +232,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" && session?.user) {
-        handleUser(session.user);
+        handleUser(session.user).finally(() => setLoading(false));
       } else if (event === "SIGNED_OUT") {
         handleUser(null);
+        setLoading(false);
       } else if (event === "TOKEN_REFRESHED" && session?.user) {
         // Silently refresh - data already loaded
       }

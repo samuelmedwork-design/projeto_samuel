@@ -22,11 +22,12 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       const ok = await login(email, password);
-      if (!ok) {
+      if (ok) {
+        router.push("/dashboard");
+      } else {
         setError("E-mail ou senha incorretos.");
         setSubmitting(false);
       }
-      // Se ok, o onAuthStateChange vai setar o user e o useEffect acima redireciona
     } catch {
       setError("Erro ao conectar. Tente novamente.");
       setSubmitting(false);
