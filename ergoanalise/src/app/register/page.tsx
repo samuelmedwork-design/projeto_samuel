@@ -22,7 +22,9 @@ export default function RegisterPage() {
     setSubmitting(true);
     try {
       const ok = await register(name, email, password);
-      if (!ok) {
+      if (ok) {
+        router.push("/dashboard");
+      } else {
         setError("E-mail já cadastrado ou dados inválidos.");
         setSubmitting(false);
       }

@@ -256,13 +256,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (name: string, email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: name } },
-    });
+    const timeout = new Promise<{ data: { user: null }; error: { message: string } }>((resolve) =>
+      setTimeout(() => resolve({ data: { user: null }, error: { message: "Tempo limite" } }), 15000)
+    );
+    const attempt = supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
+    const { data, error } = await Promise.race([attempt, timeout]);
     if (error || !data.user) return false;
-    // Atualiza o perfil com o nome
     await supabase.from("profiles").upsert({ id: data.user.id, full_name: name });
     return true;
   };
