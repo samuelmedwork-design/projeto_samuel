@@ -2,7 +2,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
-import { FiPlus, FiChevronRight, FiSearch } from "react-icons/fi";
+import { FiPlus, FiChevronRight, FiSearch, FiTrash2 } from "react-icons/fi";
 
 function formatCnpj(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 14);
@@ -38,7 +38,7 @@ function isValidCnpj(cnpj: string): boolean {
 
 export default function CompaniesPage() {
   const router = useRouter();
-  const { companies, addCompany } = useData();
+  const { companies, addCompany, deleteCompany } = useData();
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState("");
   const [cnpj, setCnpj] = useState("");
@@ -130,7 +130,21 @@ export default function CompaniesPage() {
                   <td className="px-6 py-4 text-slate-600 text-sm">{c.cnpj}</td>
                   <td className="px-6 py-4 text-slate-600 text-sm">{c.city}</td>
                   <td className="px-6 py-4 text-right">
-                    <FiChevronRight className="text-slate-400" />
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`Excluir a empresa "${c.name}" e todos os seus dados (setores, cargos, questionários, avaliações, ações)? Esta ação não pode ser desfeita.`)) {
+                            deleteCompany(c.id);
+                          }
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Excluir empresa"
+                      >
+                        <FiTrash2 size={15} />
+                      </button>
+                      <FiChevronRight className="text-slate-400" />
+                    </div>
                   </td>
                 </tr>
               ))

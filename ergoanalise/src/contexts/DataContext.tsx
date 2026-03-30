@@ -82,6 +82,7 @@ interface DataContextType {
   logout: () => Promise<void>;
   addCompany: (c: Omit<Company, "id">) => Promise<Company>;
   updateCompany: (id: string, data: Partial<Company>) => Promise<void>;
+  deleteCompany: (id: string) => Promise<void>;
   addSector: (s: Omit<Sector, "id">) => Promise<Sector>;
   deleteSector: (id: string) => Promise<void>;
   addPosition: (p: Omit<Position, "id">) => Promise<Position>;
@@ -275,6 +276,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setCompanies((prev) => prev.map((c) => (c.id === id ? { ...c, ...d } : c)));
   };
 
+  const deleteCompany = async (id: string) => {
+    await supabase.from("companies").delete().eq("id", id);
+    setCompanies((prev) => prev.filter((c) => c.id !== id));
+    setSectors((prev) => prev.filter((s) => s.companyId !== id));
+    setPositions((prev) => prev.filter((p) => p.companyId !== id));
+    setSurveys((prev) => prev.filter((s) => s.companyId !== id));
+    setAssessments((prev) => prev.filter((a) => a.companyId !== id));
+    setActions((prev) => prev.filter((a) => a.companyId !== id));
+  };
+
   // ── Sectors ──
   const addSector = async (s: Omit<Sector, "id">) => {
     const { data, error } = await supabase.from("sectors").insert({ company_id: s.companyId, name: s.name }).select().single();
@@ -465,7 +476,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     <DataContext.Provider
       value={{
         user, companies, sectors, positions, surveys, assessments, actions, blocks, templates, anthroRanges, loading,
-        login, register, logout, addCompany, updateCompany, addSector, deleteSector, addPosition, deletePosition,
+        login, register, logout, addCompany, updateCompany, deleteCompany, addSector, deleteSector, addPosition, deletePosition,
         addSurvey, updateSurvey, deleteSurvey, addAssessment, updateAssessment, deleteAssessment, addAction, updateAction, deleteAction,
         addBlock, updateBlock, deleteBlock, addTemplate, updateTemplate, deleteTemplate,
         addAnthroRange, updateAnthroRange, deleteAnthroRange, refreshData,
