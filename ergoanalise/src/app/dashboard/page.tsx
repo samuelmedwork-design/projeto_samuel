@@ -1,8 +1,9 @@
 "use client";
 import { useData } from "@/contexts/DataContext";
 import { useRouter } from "next/navigation";
-import { FiHome, FiUsers, FiClipboard, FiAlertCircle, FiAlertTriangle, FiClock } from "react-icons/fi";
-import { useMemo } from "react";
+import { FiHome, FiUsers, FiClipboard, FiAlertCircle, FiAlertTriangle, FiClock, FiDownload } from "react-icons/fi";
+import { useToast } from "@/components/Toast";
+import { useMemo, useState } from "react";
 
 /* ─── Reusable SVG horizontal bar chart ─────────────────────────────── */
 function HorizontalBarChart({
@@ -88,8 +89,29 @@ function HorizontalBarChart({
 
 /* ─── Main Dashboard ────────────────────────────────────────────────── */
 export default function DashboardPage() {
-  const { companies, surveys, assessments, actions } = useData();
+  const { companies, sectors, positions, surveys, assessments, actions, blocks, templates, anthroRanges } = useData();
   const router = useRouter();
+  const { toast } = useToast();
+  const [backingUp, setBackingUp] = useState(false);
+
+  const handleBackup = () => {
+    setBackingUp(true);
+    const backup = {
+      exportDate: new Date().toISOString(),
+      version: "1.0",
+      data: { companies, sectors, positions, surveys, assessments, actions, blocks, templates, anthroRanges },
+    };
+    const json = JSON.stringify(backup, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ergoanalise-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setBackingUp(false);
+    toast("Backup exportado com sucesso!");
+  };
 
   const pendingActions = actions.filter((a) => a.status === "pendente");
   const overdueActions = actions.filter((a) => a.status !== "concluido" && a.deadline && new Date(a.deadline) < new Date());
@@ -176,9 +198,16 @@ export default function DashboardPage() {
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-800">Dashboard</h1>
-        <p className="text-slate-500 mt-1">Visão geral do sistema</p>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800">Dashboard</h1>
+          <p className="text-slate-500 mt-1">Visão geral do sistema</p>
+        </div>
+        <button onClick={handleBackup} disabled={backingUp}
+          className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-colors font-medium text-sm disabled:opacity-50">
+          <FiDownload size={16} />
+          {backingUp ? "Exportando..." : "Backup dos Dados"}
+        </button>
       </div>
 
       {/* Summary Cards */}
