@@ -76,9 +76,9 @@ export default function AnthropometryPage() {
     if (!confirm("Isso criará faixas de 130 a 200 cm em intervalos de 5 cm. Continuar?")) return;
     for (let min = 130; min < 200; min += 5) {
       await addAnthroRange({
-        name: `${min} - ${min + 5} cm`,
+        name: `${min} - ${min + 4} cm`,
         minHeight: min,
-        maxHeight: min + 5,
+        maxHeight: min + 4,
       });
     }
   };
