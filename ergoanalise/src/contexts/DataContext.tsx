@@ -218,13 +218,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   // ── Init: check session once ──
   useEffect(() => {
+    // Timeout de segurança: se loading não terminar em 8s, força
+    const safetyTimeout = setTimeout(() => setLoading(false), 8000);
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        handleUser(session.user).finally(() => setLoading(false));
+        handleUser(session.user).finally(() => { clearTimeout(safetyTimeout); setLoading(false); });
       } else {
+        clearTimeout(safetyTimeout);
         setLoading(false);
       }
-    }).catch(() => setLoading(false));
+    }).catch(() => { clearTimeout(safetyTimeout); setLoading(false); });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" && session?.user) {
