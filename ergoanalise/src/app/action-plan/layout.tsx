@@ -14,7 +14,7 @@ export default function ActionPlanLayout({ children }: { children: React.ReactNo
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex-1 flex items-center justify-center bg-slate-50">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-slate-500 text-sm">Carregando...</p>
