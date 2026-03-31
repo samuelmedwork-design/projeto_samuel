@@ -8,7 +8,7 @@ import { exportChecklistDocx, type DocxChecklistData } from "@/lib/export";
 export default function ChecklistReportPage() {
   const { companyId } = useParams<{ companyId: string }>();
   const router = useRouter();
-  const { companies, sectors, positions, assessments } = useData();
+  const { companies, sectors, positions, assessments, getFullAssessmentsForCompany } = useData();
   const company = companies.find((c) => c.id === companyId);
 
   const [filterSector, setFilterSector] = useState("");
@@ -35,15 +35,23 @@ export default function ChecklistReportPage() {
 
   const exportPDF = () => window.print();
 
-  const handleDocx = () => {
+  const handleDocx = async () => {
     if (!company) return;
+    const fullAssessments = await getFullAssessmentsForCompany(companyId);
+    const assessmentsToExport = fullAssessments.filter((a) => {
+      if (filterSector && a.sectorId !== filterSector) return false;
+      if (filterPosition && a.positionId !== filterPosition) return false;
+      if (startDate && a.createdAt < startDate) return false;
+      if (endDate && a.createdAt > endDate + 'T23:59:59') return false;
+      return true;
+    });
     const data: DocxChecklistData = {
       companyName: company.name,
       companyCnpj: company.cnpj,
       companyCity: company.city,
       date: new Date().toLocaleDateString("pt-BR"),
       logoUrl: "/logo-horizontal.png",
-      assessments: companyAssessments.map((a) => ({
+      assessments: assessmentsToExport.map((a) => ({
         templateName: a.templateName,
         sector: getSectorName(a.sectorId),
         position: getPositionName(a.positionId),

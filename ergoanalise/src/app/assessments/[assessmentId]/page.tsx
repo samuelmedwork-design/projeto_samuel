@@ -1,8 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
-import type { FilledBlock, FilledAnswer } from "@/contexts/DataContext";
+import type { FilledBlock, FilledAnswer, Assessment } from "@/contexts/DataContext";
 import { FiArrowLeft, FiTrash2, FiEdit2, FiSave, FiDownload, FiX } from "react-icons/fi";
 import { exportChecklistDocx, type DocxChecklistData } from "@/lib/export";
 import { useToast } from "@/components/Toast";
@@ -17,10 +17,18 @@ const WORK_RELATION_LABELS: Record<string, string> = {
 export default function AssessmentDetailPage() {
   const { assessmentId } = useParams<{ assessmentId: string }>();
   const router = useRouter();
-  const { assessments, companies, sectors, positions, updateAssessment, deleteAssessment } = useData();
+  const { assessments, companies, sectors, positions, updateAssessment, deleteAssessment, getFullAssessment } = useData();
   const { toast } = useToast();
 
-  const assessment = assessments.find((a) => a.id === assessmentId);
+  const [fullAssessment, setFullAssessment] = useState<Assessment | null>(null);
+  const basicAssessment = assessments.find((a) => a.id === assessmentId);
+  const assessment = fullAssessment ?? basicAssessment;
+
+  useEffect(() => {
+    if (assessmentId) {
+      getFullAssessment(assessmentId).then((data) => { if (data) setFullAssessment(data); });
+    }
+  }, [assessmentId, getFullAssessment]);
   const company = assessment ? companies.find((c) => c.id === assessment.companyId) : null;
   const sector = assessment ? sectors.find((s) => s.id === assessment.sectorId) : null;
   const position = assessment ? positions.find((p) => p.id === assessment.positionId) : null;

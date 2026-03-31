@@ -1,9 +1,10 @@
 "use client";
 import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { FiArrowLeft, FiTrash2 } from "react-icons/fi";
 import BodyMap, { BodyMapLegend } from "@/components/BodyMap";
-import type { WorkRelation } from "@/contexts/DataContext";
+import type { WorkRelation, SurveyResponse } from "@/contexts/DataContext";
 
 const workRelationLabels: Record<WorkRelation, string> = {
   ja_inicia_com_dor: "Já inicio o trabalho com essa dor",
@@ -32,10 +33,18 @@ function capitalize(str: string) {
 export default function SurveyDetailPage() {
   const { id, surveyId } = useParams<{ id: string; surveyId: string }>();
   const router = useRouter();
-  const { companies, surveys, deleteSurvey } = useData();
+  const { companies, surveys, deleteSurvey, getFullSurvey } = useData();
+
+  const [fullSurvey, setFullSurvey] = useState<SurveyResponse | null>(null);
+
+  useEffect(() => {
+    if (surveyId) {
+      getFullSurvey(surveyId).then((data) => { if (data) setFullSurvey(data); });
+    }
+  }, [surveyId, getFullSurvey]);
 
   const company = companies.find((c) => c.id === id);
-  const survey = surveys.find((s) => s.id === surveyId);
+  const survey = fullSurvey ?? surveys.find((s) => s.id === surveyId);
 
   const handleDelete = async () => {
     if (
