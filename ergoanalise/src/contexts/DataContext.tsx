@@ -68,7 +68,7 @@ export const ERGONOMIC_RISKS = [
   "Recebo por produtividade",
 ];
 const ASSESSMENT_LIST_SELECT = "id,company_id,sector_id,position_id,template_id,template_name,workstation,observed_worker,general_notes,created_at";
-const SURVEY_LIST_SELECT = "id,company_id,worker_name,sector,position,height,weight,sex,created_at";
+const SURVEY_LIST_SELECT = "id,company_id,worker_name,sector,position,height,weight,sex,created_at,pain_areas,ergonomic_risks,manual_load";
 
 // ─── Context ─────────────────────────────────────────────────────────
 interface DataContextType {
