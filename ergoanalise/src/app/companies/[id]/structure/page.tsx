@@ -64,10 +64,10 @@ export default function StructurePage() {
     toast("Cargo criado com sucesso!");
   };
 
-  // Gera link com dados embarcados para funcionar sem autenticação
+  // Gera link com dados embarcados em base64 URL-safe (sem +, /, = que quebram ao compartilhar)
   const generateSurveyLink = () => {
     if (typeof window === "undefined") return "";
-    const companyData = {
+    const payload = {
       id,
       name: company?.name || "",
       sectors: companySectors.map((s) => ({
@@ -76,15 +76,15 @@ export default function StructurePage() {
         positions: positions.filter((p) => p.sectorId === s.id).map((p) => ({ id: p.id, name: p.name })),
       })),
     };
-    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(companyData))));
-    return `${window.location.origin}/survey/${id}?d=${encoded}`;
+    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
+      .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+    return `${window.location.origin}/survey/${id}?d=${b64}`;
   };
 
   const surveyLink = generateSurveyLink();
 
   const copyLink = () => {
-    const freshLink = generateSurveyLink();
-    navigator.clipboard.writeText(freshLink);
+    navigator.clipboard.writeText(generateSurveyLink());
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

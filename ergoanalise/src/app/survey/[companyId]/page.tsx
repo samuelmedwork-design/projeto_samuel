@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import {
   PainArea, PainIntensity, Laterality, WorkRelation, ManualLoadData,
@@ -43,12 +43,14 @@ export default function SurveyPage() {
   const { companyId } = useParams<{ companyId: string }>();
   const searchParams = useSearchParams();
 
-  // Tenta carregar dados embarcados no link (parâmetro ?d=)
+  // Decodifica dados embarcados no link (base64 URL-safe)
   const embedded = useMemo<EmbeddedCompany | null>(() => {
     try {
       const param = searchParams.get("d");
       if (!param) return null;
-      const json = decodeURIComponent(escape(atob(param)));
+      // Restaura base64 padrão a partir do encoding URL-safe (- → +, _ → /)
+      const b64 = param.replace(/-/g, "+").replace(/_/g, "/");
+      const json = decodeURIComponent(escape(atob(b64)));
       return JSON.parse(json) as EmbeddedCompany;
     } catch {
       return null;
@@ -300,7 +302,7 @@ export default function SurveyPage() {
             </svg>
           </div>
           <h2 className="text-lg font-semibold text-slate-800 mb-2">Link inválido</h2>
-          <p className="text-slate-500 text-sm">Este link não contém os dados da empresa. Solicite um novo link ao responsável pela empresa.</p>
+          <p className="text-slate-500 text-sm">Este link está desatualizado. Solicite um novo link ao responsável pela empresa.</p>
         </div>
       </div>
     );
