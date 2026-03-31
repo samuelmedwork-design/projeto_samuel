@@ -143,9 +143,9 @@ export default function SurveyDetailPage() {
         <h2 className="text-lg font-semibold text-slate-800 mb-4">
           Riscos Ergonômicos
         </h2>
-        {survey.ergonomicRisks?.length > 0 ? (
+        {(survey.ergonomicRisks || []).length > 0 ? (
           <div className="flex flex-wrap gap-2">
-            {survey.ergonomicRisks.map((risk, i) => (
+            {(survey.ergonomicRisks || []).map((risk, i) => (
               <span
                 key={i}
                 className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200"
@@ -165,17 +165,17 @@ export default function SurveyDetailPage() {
           Dor e Desconforto
         </h2>
 
-        {survey.painAreas?.length > 0 ? (
+        {(survey.painAreas || []).length > 0 ? (
           <div className="grid md:grid-cols-[auto_1fr] gap-6">
             {/* Body Map */}
             <div className="flex flex-col items-center gap-3">
-              <BodyMap painAreas={survey.painAreas} size="md" />
+              <BodyMap painAreas={survey.painAreas || []} size="md" />
               <BodyMapLegend />
             </div>
 
             {/* List */}
             <div className="space-y-3">
-              {survey.painAreas.map((pa, i) => (
+              {(survey.painAreas || []).map((pa, i) => (
                 <div
                   key={i}
                   className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100"
@@ -225,7 +225,7 @@ export default function SurveyDetailPage() {
                 Faixa de Peso
               </span>
               <p className="text-sm text-slate-800 mt-1">
-                {survey.manualLoad.weightLevel}
+                {survey.manualLoad?.weightLevel}
               </p>
             </div>
             <div>
@@ -233,7 +233,7 @@ export default function SurveyDetailPage() {
                 % do Tempo
               </span>
               <p className="text-sm text-slate-800 mt-1">
-                {survey.manualLoad.timePercentage}
+                {survey.manualLoad?.timePercentage}
               </p>
             </div>
             <div>
@@ -241,7 +241,7 @@ export default function SurveyDetailPage() {
                 Frequência de Esforço
               </span>
               <p className="text-sm text-slate-800 mt-1">
-                {survey.manualLoad.effortFrequency}
+                {survey.manualLoad?.effortFrequency}
               </p>
             </div>
             <div>
@@ -249,7 +249,7 @@ export default function SurveyDetailPage() {
                 Qualidade da Pega
               </span>
               <p className="text-sm text-slate-800 mt-1">
-                {survey.manualLoad.gripQuality}
+                {survey.manualLoad?.gripQuality}
               </p>
             </div>
             <div>
@@ -257,7 +257,7 @@ export default function SurveyDetailPage() {
                 Ritmo de Trabalho
               </span>
               <p className="text-sm text-slate-800 mt-1">
-                {survey.manualLoad.workPace}
+                {survey.manualLoad?.workPace}
               </p>
             </div>
             <div>
@@ -265,7 +265,7 @@ export default function SurveyDetailPage() {
                 Duração Diária
               </span>
               <p className="text-sm text-slate-800 mt-1">
-                {survey.manualLoad.dailyDuration}
+                {survey.manualLoad?.dailyDuration}
               </p>
             </div>
           </div>

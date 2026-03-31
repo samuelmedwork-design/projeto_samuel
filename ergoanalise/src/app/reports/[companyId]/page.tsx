@@ -137,7 +137,7 @@ export default function CompanyReportPage() {
                       <div className="mt-3">
                         <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Riscos Percebidos</p>
                         <div className="flex flex-wrap gap-1">
-                          {survey.ergonomicRisks.map((r) => (
+                          {(survey.ergonomicRisks || []).map((r) => (
                             <span key={r} className="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded">{r}</span>
                           ))}
                         </div>
@@ -147,11 +147,11 @@ export default function CompanyReportPage() {
                       <div className="mt-3">
                         <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Transporte Manual de Cargas</p>
                         <div className="text-xs text-slate-600 space-y-0.5">
-                          {survey.manualLoad.weightLevel && <p>Peso: {survey.manualLoad.weightLevel}</p>}
-                          {survey.manualLoad.timePercentage && <p>Tempo: {survey.manualLoad.timePercentage}</p>}
-                          {survey.manualLoad.gripQuality && <p>Pega: {survey.manualLoad.gripQuality}</p>}
-                          {survey.manualLoad.workPace && <p>Ritmo: {survey.manualLoad.workPace}</p>}
-                          {survey.manualLoad.dailyDuration && <p>Duração: {survey.manualLoad.dailyDuration}</p>}
+                          {survey.manualLoad?.weightLevel && <p>Peso: {survey.manualLoad.weightLevel}</p>}
+                          {survey.manualLoad?.timePercentage && <p>Tempo: {survey.manualLoad.timePercentage}</p>}
+                          {survey.manualLoad?.gripQuality && <p>Pega: {survey.manualLoad.gripQuality}</p>}
+                          {survey.manualLoad?.workPace && <p>Ritmo: {survey.manualLoad.workPace}</p>}
+                          {survey.manualLoad?.dailyDuration && <p>Duração: {survey.manualLoad.dailyDuration}</p>}
                         </div>
                       </div>
                     )}
@@ -159,7 +159,7 @@ export default function CompanyReportPage() {
 
                   <div className="flex justify-center">
                     {(survey.painAreas || []).length > 0 ? (
-                      <BodyMap painAreas={survey.painAreas} size="sm" />
+                      <BodyMap painAreas={survey.painAreas || []} size="sm" />
                     ) : (
                       <div className="w-[150px] h-[300px] bg-slate-50 rounded-lg flex items-center justify-center">
                         <p className="text-xs text-slate-400 text-center px-4">Sem queixas</p>
