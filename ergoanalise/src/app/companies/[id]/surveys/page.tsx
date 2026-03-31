@@ -126,9 +126,9 @@ export default function SurveyHistoryPage() {
                     {s.height ? `${s.height} cm` : "-"}
                   </td>
                   <td className="px-5 py-3 text-sm">
-                    {s.painAreas?.length > 0 ? (
+                    {(s.painAreas || []).length > 0 ? (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">
-                        {s.painAreas.length} queixa(s)
+                        {(s.painAreas || []).length} queixa(s)
                       </span>
                     ) : (
                       <span className="text-slate-400 text-xs">Nenhuma</span>
