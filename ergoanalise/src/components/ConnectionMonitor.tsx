@@ -27,7 +27,7 @@ export default function ConnectionMonitor() {
 
   useEffect(() => {
     // Verifica a cada 30 segundos
-    const interval = setInterval(checkConnection, 30000);
+    const interval = setInterval(checkConnection, 120000); // 2 minutos
     // Listeners de online/offline do navegador
     const goOffline = () => setOffline(true);
     const goOnline = () => checkConnection();
