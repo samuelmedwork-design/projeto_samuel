@@ -16,8 +16,12 @@ export interface ManualLoadData { performs: boolean; weightLevel: string; timePe
 
 export interface SurveyResponse {
   id: string; companyId: string; workerName: string; sector: string; position: string;
-  height: number; weight?: number; sex?: string; ergonomicRisks: string[]; painAreas: PainArea[];
-  manualLoad: ManualLoadData; signature?: string; createdAt: string;
+  height: number; weight?: number; sex?: string;
+  ergonomicRisks?: string[];
+  painAreas?: PainArea[];
+  manualLoad?: ManualLoadData;
+  signature?: string;
+  createdAt: string;
 }
 
 export type QuestionType = "marcacao" | "numerico";
@@ -32,7 +36,7 @@ export interface FilledBlock { blockId: string; blockName: string; image?: strin
 export interface Assessment {
   id: string; companyId: string; sectorId: string; positionId: string;
   templateId: string; templateName: string; workstation: string; observedWorker: string;
-  filledBlocks: FilledBlock[]; generalNotes: string; createdAt: string;
+  filledBlocks?: FilledBlock[]; generalNotes: string; createdAt: string;
 }
 
 export interface ActionItem {
@@ -63,6 +67,11 @@ export const ERGONOMIC_RISKS = [
   "Meu trabalho é muito repetitivo",
   "Recebo por produtividade",
 ];
+];
+
+a
+const ASSESSMENT_LIST_SELECT = "id,company_id,sector_id,position_id,template_id,template_name,workstation,observed_worker,general_notes,created_at";
+const SURVEY_LIST_SELECT = "id,company_id,worker_name,sector,position,height,weight,sex,created_at";
 
 // ─── Context ─────────────────────────────────────────────────────────
 interface DataContextType {
@@ -80,6 +89,10 @@ interface DataContextType {
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
+  getFullAssessment: (id: string) => Promise<Assessment | null>;
+  getFullAssessmentsForCompany: (companyId: string) => Promise<Assessment[]>;
+  getFullSurvey: (id: string) => Promise<SurveyResponse | null>;
+  getFullSurveysForCompany: (companyId: string) => Promise<SurveyResponse[]>;
   addCompany: (c: Omit<Company, "id">) => Promise<Company>;
   updateCompany: (id: string, data: Partial<Company>) => Promise<void>;
   deleteCompany: (id: string) => Promise<void>;
@@ -124,8 +137,10 @@ function mapSurvey(r: any): SurveyResponse {
   return {
     id: r.id, companyId: r.company_id, workerName: r.worker_name, sector: r.sector,
     position: r.position, height: r.height, weight: r.weight, sex: r.sex,
-    ergonomicRisks: r.ergonomic_risks || [],
-    painAreas: r.pain_areas || [], manualLoad: r.manual_load || { performs: false, weightLevel: "", timePercentage: "", effortFrequency: "", gripQuality: "", workPace: "", dailyDuration: "" },
+    ...(r.ergonomic_risks !== undefined && { ergonomicRisks: r.ergonomic_risks || [] }),
+    ...(r.pain_areas !== undefined && { painAreas: r.pain_areas || [] }),
+    ...(r.manual_load !== undefined && { manualLoad: r.manual_load }),
+    ...(r.signature !== undefined && { signature: r.signature }),
     signature: r.signature, createdAt: r.created_at,
   };
 }
@@ -133,7 +148,8 @@ function mapAssessment(r: any): Assessment {
   return {
     id: r.id, companyId: r.company_id, sectorId: r.sector_id, positionId: r.position_id,
     templateId: r.template_id, templateName: r.template_name, workstation: r.workstation,
-    observedWorker: r.observed_worker, filledBlocks: r.filled_blocks || [],
+    observedWorker: r.observed_worker,
+    ...(r.filled_blocks !== undefined && { filledBlocks: r.filled_blocks || [] }),
     generalNotes: r.general_notes, createdAt: r.created_at,
   };
 }
@@ -158,26 +174,31 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [anthroRanges, setAnthroRanges] = useState<AnthroRange[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // ── Load all data ──
   const loadAllData = async () => {
     try {
-      const [c, s, p, sv, a, ac, b, t, ar] = await Promise.all([
+      const [c, s, p] = await Promise.all([
         supabase.from("companies").select("*"),
         supabase.from("sectors").select("*"),
         supabase.from("positions").select("*"),
-        supabase.from("surveys").select("*").order("created_at", { ascending: false }),
-        supabase.from("assessments").select("*").order("created_at", { ascending: false }),
-        supabase.from("actions").select("*"),
-        supabase.from("blocks").select("*"),
-        supabase.from("templates").select("*"),
-        supabase.from("anthro_ranges").select("*"),
       ]);
       setCompanies((c.data || []).map(mapCompany));
       setSectors((s.data || []).map(mapSector));
       setPositions((p.data || []).map(mapPosition));
+
+      const [sv, a, ac] = await Promise.all([
+        supabase.from("surveys").select(SURVEY_LIST_SELECT).order("created_at", { ascending: false }),
+        supabase.from("assessments").select(ASSESSMENT_LIST_SELECT).order("created_at", { ascending: false }),
+        supabase.from("actions").select("*"),
+      ]);
       setSurveys((sv.data || []).map(mapSurvey));
       setAssessments((a.data || []).map(mapAssessment));
       setActions((ac.data || []).map(mapAction));
+
+      const [b, t, ar] = await Promise.all([
+        supabase.from("blocks").select("*"),
+        supabase.from("templates").select("*"),
+        supabase.from("anthro_ranges").select("*"),
+      ]);
       setBlocks((b.data || []).map(mapBlock));
       setTemplates((t.data || []).map(mapTemplate));
       setAnthroRanges((ar.data || []).map(mapAnthro));
@@ -186,6 +207,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const getFullAssessment = useCallback(async (id: string): Promise<Assessment | null> => {
+    const { data, error } = await supabase.from("assessments").select("*").eq("id", id).single();
+    if (error || !data) return null;
+    return mapAssessment(data);
+  }, []);
+
+  const getFullAssessmentsForCompany = useCallback(async (companyId: string): Promise<Assessment[]> => {
+    const { data } = await supabase.from("assessments").select("*").eq("company_id", companyId).order("created_at", { ascending: false });
+    return (data || []).map(mapAssessment);
+  }, []);
+
+  const getFullSurvey = useCallback(async (id: string): Promise<SurveyResponse | null> => {
+    const { data, error } = await supabase.from("surveys").select("*").eq("id", id).single();
+    if (error || !data) return null;
+    return mapSurvey(data);
+  }, []);
+
+  const getFullSurveysForCompany = useCallback(async (companyId: string): Promise<SurveyResponse[]> => {
+    const { data } = await supabase.from("surveys").select("*").eq("company_id", companyId).order("created_at", { ascending: false });
+    return (data || []).map(mapSurvey);
+  }, []);
   const loadData = loadAllData;
 
   // ── Set user from Supabase auth user ──
@@ -484,7 +526,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     <DataContext.Provider
       value={{
         user, companies, sectors, positions, surveys, assessments, actions, blocks, templates, anthroRanges, loading,
-        login, register, logout, addCompany, updateCompany, deleteCompany, addSector, deleteSector, addPosition, deletePosition,
+        login, register, logout,
+        getFullAssessment, getFullAssessmentsForCompany, getFullSurvey, getFullSurveysForCompany,
+        addCompany, updateCompany, deleteCompany, addSector, deleteSector, addPosition, deletePosition,
         addSurvey, updateSurvey, deleteSurvey, addAssessment, updateAssessment, deleteAssessment, addAction, updateAction, deleteAction,
         addBlock, updateBlock, deleteBlock, addTemplate, updateTemplate, deleteTemplate,
         addAnthroRange, updateAnthroRange, deleteAnthroRange, refreshData,
