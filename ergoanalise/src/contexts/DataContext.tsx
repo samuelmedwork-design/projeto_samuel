@@ -364,12 +364,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   // ── Surveys ──
   const addSurvey = async (s: Omit<SurveyResponse, "id" | "createdAt">) => {
-    const { data } = await supabase.from("surveys").insert({
+    const { data, error } = await supabase.from("surveys").insert({
       company_id: s.companyId, worker_name: s.workerName, sector: s.sector,
       position: s.position, height: s.height, ergonomic_risks: s.ergonomicRisks,
       pain_areas: s.painAreas, manual_load: s.manualLoad, signature: s.signature,
     }).select().single();
-    if (data) setSurveys((prev) => [mapSurvey(data), ...prev]);
+    if (error || !data) { console.error("addSurvey error:", error); throw new Error(error?.message || "Erro ao salvar questionário"); }
+    setSurveys((prev) => [mapSurvey(data), ...prev]);
   };
 
   const updateSurvey = async (id: string, d: Partial<SurveyResponse>) => {
@@ -392,12 +393,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   // ── Assessments ──
   const addAssessment = async (a: Omit<Assessment, "id" | "createdAt">) => {
-    const { data } = await supabase.from("assessments").insert({
+    const { data, error } = await supabase.from("assessments").insert({
       company_id: a.companyId, sector_id: a.sectorId, position_id: a.positionId,
       template_id: a.templateId, template_name: a.templateName, workstation: a.workstation,
       observed_worker: a.observedWorker, filled_blocks: a.filledBlocks, general_notes: a.generalNotes,
     }).select().single();
-    if (data) setAssessments((prev) => [mapAssessment(data), ...prev]);
+    if (error || !data) { console.error("addAssessment error:", error); throw new Error(error?.message || "Erro ao salvar avaliação"); }
+    setAssessments((prev) => [mapAssessment(data), ...prev]);
   };
 
   const updateAssessment = async (id: string, d: Partial<Assessment>) => {
@@ -419,11 +421,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   // ── Actions ──
   const addAction = async (a: Omit<ActionItem, "id">) => {
-    const { data } = await supabase.from("actions").insert({
+    const { data, error } = await supabase.from("actions").insert({
       company_id: a.companyId, recommendation: a.recommendation, priority: a.priority,
       responsible: a.responsible, status: a.status, deadline: a.deadline,
     }).select().single();
-    if (data) setActions((prev) => [...prev, mapAction(data)]);
+    if (error || !data) { console.error("addAction error:", error); throw new Error(error?.message || "Erro ao salvar ação"); }
+    setActions((prev) => [...prev, mapAction(data)]);
   };
 
   const updateAction = async (id: string, d: Partial<ActionItem>) => {
