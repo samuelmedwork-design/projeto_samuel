@@ -138,7 +138,7 @@ function mapSurvey(r: any): SurveyResponse {
     ...(r.pain_areas !== undefined && { painAreas: r.pain_areas || [] }),
     ...(r.manual_load !== undefined && { manualLoad: r.manual_load }),
     ...(r.signature !== undefined && { signature: r.signature }),
-    signature: r.signature, createdAt: r.created_at,
+    createdAt: r.created_at,
   };
 }
 function mapAssessment(r: any): Assessment {
