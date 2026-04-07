@@ -14,29 +14,45 @@ export default function AssessmentsPage() {
   // Modal state
   const [selTemplate, setSelTemplate] = useState("");
   const [selCompany, setSelCompany] = useState("");
-  const [selSector, setSelSector] = useState("");
+  const [selSectors, setSelSectors] = useState<string[]>([]);
   const [selPositions, setSelPositions] = useState<string[]>([]);
 
   const modalSectors = sectors.filter((s) => s.companyId === selCompany);
-  const modalPositions = positions.filter((p) => p.sectorId === selSector);
+  // Cargos de todos os setores selecionados
+  const modalPositions = positions.filter((p) => selSectors.includes(p.sectorId));
+
+  const toggleSector = (id: string) => {
+    setSelSectors((prev) => {
+      const next = prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id];
+      // Remove cargos que não pertencem mais aos setores selecionados
+      setSelPositions((prevPos) =>
+        prevPos.filter((pid) => {
+          const pos = positions.find((p) => p.id === pid);
+          return pos && next.includes(pos.sectorId);
+        })
+      );
+      return next;
+    });
+  };
 
   const togglePosition = (id: string) => {
-    setSelPositions((prev) => prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]);
+    setSelPositions((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+    );
   };
 
   const openModal = () => {
     setSelTemplate("");
     setSelCompany("");
-    setSelSector("");
+    setSelSectors([]);
     setSelPositions([]);
     setShowModal(true);
   };
 
   const startAssessment = () => {
-    if (!selTemplate || !selCompany || !selSector || selPositions.length === 0) return;
+    if (!selTemplate || !selCompany || selPositions.length === 0) return;
     const params = new URLSearchParams({
       company: selCompany,
-      sector: selSector,
       positions: selPositions.join(","),
     });
     router.push(`/assessments/fill/${selTemplate}?${params.toString()}`);
@@ -79,7 +95,6 @@ export default function AssessmentsPage() {
         </button>
       </div>
 
-      {/* Busca */}
       {assessments.length > 0 && (
         <div className="relative mb-6">
           <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -93,7 +108,6 @@ export default function AssessmentsPage() {
         </div>
       )}
 
-      {/* Histórico */}
       {assessments.length === 0 ? (
         <div className="bg-white rounded-xl border-2 border-dashed border-slate-200 p-12 text-center text-slate-400">
           <FiClipboard size={40} className="mx-auto mb-3 opacity-50" />
@@ -120,10 +134,16 @@ export default function AssessmentsPage() {
             </thead>
             <tbody>
               {filteredAssessments.map((a) => {
-                const ncCount = (a.filledBlocks || []).reduce((sum, fb) =>
-                  sum + (fb.answers || []).filter(
-                    (ans) => ans.type === "marcacao" && ans.value.toLowerCase().includes("não") && !ans.value.toLowerCase().includes("não se aplica")
-                  ).length, 0
+                const ncCount = (a.filledBlocks || []).reduce(
+                  (sum, fb) =>
+                    sum +
+                    (fb.answers || []).filter(
+                      (ans) =>
+                        ans.type === "marcacao" &&
+                        ans.value.toLowerCase().includes("não") &&
+                        !ans.value.toLowerCase().includes("não se aplica")
+                    ).length,
+                  0
                 );
                 return (
                   <tr key={a.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
@@ -140,15 +160,23 @@ export default function AssessmentsPage() {
                       {getSectorName(a.sectorId)} / {getPositionName(a.positionId)}
                     </td>
                     <td className="px-4 py-3 text-slate-600 hidden lg:table-cell">{a.workstation || "—"}</td>
-                    <td className="px-4 py-3 text-slate-500">{new Date(a.createdAt).toLocaleDateString("pt-BR")}</td>
+                    <td className="px-4 py-3 text-slate-500">
+                      {new Date(a.createdAt).toLocaleDateString("pt-BR")}
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => router.push(`/assessments/${a.id}`)}
-                          className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors" title="Ver detalhes">
+                        <button
+                          onClick={() => router.push(`/assessments/${a.id}`)}
+                          className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
+                          title="Ver detalhes"
+                        >
                           <FiEye size={15} />
                         </button>
-                        <button onClick={() => handleDelete(a.id, a.templateName)}
-                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Excluir">
+                        <button
+                          onClick={() => handleDelete(a.id, a.templateName)}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          title="Excluir"
+                        >
                           <FiTrash2 size={15} />
                         </button>
                       </div>
@@ -164,14 +192,17 @@ export default function AssessmentsPage() {
       {/* Modal Nova Avaliação */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 w-full max-w-lg mx-4 space-y-5">
+          <div className="bg-white rounded-2xl p-8 w-full max-w-lg mx-4 space-y-5 max-h-[90vh] overflow-y-auto">
             <h2 className="text-lg font-semibold text-slate-800">Nova Avaliação</h2>
 
             {/* Checklist */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Checklist *</label>
-              <select value={selTemplate} onChange={(e) => setSelTemplate(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+              <select
+                value={selTemplate}
+                onChange={(e) => setSelTemplate(e.target.value)}
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+              >
                 <option value="">Selecione o checklist</option>
                 {templates.map((t) => {
                   const tplBlocks = t.blockIds.map((bid) => blocks.find((b) => b.id === bid)).filter(Boolean);
@@ -184,49 +215,52 @@ export default function AssessmentsPage() {
                 })}
               </select>
               {templates.length === 0 && (
-                <p className="text-xs text-amber-600 mt-1">Nenhum checklist cadastrado. Crie um em Checklists primeiro.</p>
+                <p className="text-xs text-amber-600 mt-1">
+                  Nenhum checklist cadastrado. Crie um em Checklists primeiro.
+                </p>
               )}
             </div>
 
             {/* Empresa */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Empresa *</label>
-              <select value={selCompany} onChange={(e) => { setSelCompany(e.target.value); setSelSector(""); setSelPositions([]); }}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+              <select
+                value={selCompany}
+                onChange={(e) => { setSelCompany(e.target.value); setSelSectors([]); setSelPositions([]); }}
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+              >
                 <option value="">Selecione a empresa</option>
-                {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {companies.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
               </select>
             </div>
 
-            {/* Setor */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Setor *</label>
-              <select value={selSector} onChange={(e) => { setSelSector(e.target.value); setSelPositions([]); }}
-                disabled={!selCompany}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none disabled:opacity-50">
-                <option value="">Selecione o setor</option>
-                {modalSectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
-
-            {/* Cargos (multi-select) */}
+            {/* Setores (multi-select com checkboxes) */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                Cargo(s) * <span className="text-slate-400 font-normal">(selecione um ou mais)</span>
+                Setor(es) * <span className="text-slate-400 font-normal">(selecione um ou mais)</span>
               </label>
-              {!selSector ? (
-                <p className="text-sm text-slate-400 py-2">Selecione um setor primeiro</p>
-              ) : modalPositions.length === 0 ? (
-                <p className="text-sm text-slate-400 py-2">Nenhum cargo cadastrado neste setor</p>
+              {!selCompany ? (
+                <p className="text-sm text-slate-400 py-2">Selecione uma empresa primeiro</p>
+              ) : modalSectors.length === 0 ? (
+                <p className="text-sm text-slate-400 py-2">Nenhum setor cadastrado nesta empresa</p>
               ) : (
                 <div className="border border-slate-300 rounded-lg p-3 max-h-40 overflow-y-auto space-y-1.5">
-                  {modalPositions.map((p) => {
-                    const checked = selPositions.includes(p.id);
+                  {modalSectors.map((s) => {
+                    const checked = selSectors.includes(s.id);
                     return (
-                      <label key={p.id} className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${checked ? "bg-emerald-50" : "hover:bg-slate-50"}`}>
-                        <input type="checkbox" checked={checked} onChange={() => togglePosition(p.id)}
-                          className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500" />
-                        <span className="text-sm text-slate-700">{p.name}</span>
+                      <label
+                        key={s.id}
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${checked ? "bg-emerald-50" : "hover:bg-slate-50"}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleSector(s.id)}
+                          className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
+                        />
+                        <span className="text-sm text-slate-700">{s.name}</span>
                       </label>
                     );
                   })}
@@ -234,14 +268,65 @@ export default function AssessmentsPage() {
               )}
             </div>
 
+            {/* Cargos (dos setores selecionados) */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Cargo(s) * <span className="text-slate-400 font-normal">(selecione um ou mais)</span>
+              </label>
+              {selSectors.length === 0 ? (
+                <p className="text-sm text-slate-400 py-2">Selecione ao menos um setor primeiro</p>
+              ) : modalPositions.length === 0 ? (
+                <p className="text-sm text-slate-400 py-2">Nenhum cargo cadastrado nos setores selecionados</p>
+              ) : (
+                <div className="border border-slate-300 rounded-lg p-3 max-h-48 overflow-y-auto space-y-1.5">
+                  {/* Agrupa cargos por setor */}
+                  {selSectors.map((sid) => {
+                    const sectorObj = modalSectors.find((s) => s.id === sid);
+                    const sectorPositions = modalPositions.filter((p) => p.sectorId === sid);
+                    if (sectorPositions.length === 0) return null;
+                    return (
+                      <div key={sid}>
+                        {selSectors.length > 1 && (
+                          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide px-2 pt-1 pb-0.5">
+                            {sectorObj?.name}
+                          </p>
+                        )}
+                        {sectorPositions.map((p) => {
+                          const checked = selPositions.includes(p.id);
+                          return (
+                            <label
+                              key={p.id}
+                              className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${checked ? "bg-emerald-50" : "hover:bg-slate-50"}`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => togglePosition(p.id)}
+                                className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
+                              />
+                              <span className="text-sm text-slate-700">{p.name}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-3 pt-2">
-              <button onClick={() => setShowModal(false)}
-                className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors">
+              <button
+                onClick={() => setShowModal(false)}
+                className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors"
+              >
                 Cancelar
               </button>
-              <button onClick={startAssessment}
-                disabled={!selTemplate || !selCompany || !selSector || selPositions.length === 0}
-                className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+              <button
+                onClick={startAssessment}
+                disabled={!selTemplate || !selCompany || selPositions.length === 0}
+                className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 Iniciar Avaliação
               </button>
             </div>

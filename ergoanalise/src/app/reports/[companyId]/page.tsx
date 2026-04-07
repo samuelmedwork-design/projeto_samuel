@@ -21,18 +21,33 @@ export default function CompanyReportPage() {
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [filterSector, setFilterSector] = useState("");
+  const [filterPosition, setFilterPosition] = useState("");
+
+  // Todos os surveys da empresa (sem filtro de data/setor) para popular os dropdowns
+  const allCompanySurveys = surveys.filter((s) => s.companyId === companyId);
+  const uniqueSectors = [...new Set(allCompanySurveys.map((s) => s.sector).filter(Boolean))].sort();
+  const uniquePositions = [
+    ...new Set(
+      allCompanySurveys
+        .filter((s) => !filterSector || s.sector === filterSector)
+        .map((s) => s.position)
+        .filter(Boolean)
+    ),
+  ].sort();
 
   const companySurveys = surveys.filter((s) => {
     if (s.companyId !== companyId) return false;
     if (startDate && s.createdAt < startDate) return false;
     if (endDate && s.createdAt > endDate + "T23:59:59") return false;
+    if (filterSector && s.sector !== filterSector) return false;
+    if (filterPosition && s.position !== filterPosition) return false;
     return true;
   });
 
   const handleDocx = async () => {
     if (!company) return;
 
-    // Captura os SVGs dos BodyMaps renderizados na página
     const svgs = document.querySelectorAll<SVGSVGElement>("[data-bodymap]");
     const bodyMapImages: string[] = [];
     for (let i = 0; i < svgs.length; i++) {
@@ -71,34 +86,76 @@ export default function CompanyReportPage() {
   return (
     <div className="p-8 print-area">
       <div className="flex items-center justify-between mb-6 no-print">
-        <button onClick={() => router.push("/reports")}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors">
+        <button
+          onClick={() => router.push("/reports")}
+          className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors"
+        >
           <FiArrowLeft size={18} /> Voltar
         </button>
         {companySurveys.length > 0 && (
           <div className="flex gap-2">
-            <button onClick={() => window.print()}
-              className="flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg hover:bg-red-700 transition-colors font-medium text-sm">
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg hover:bg-red-700 transition-colors font-medium text-sm"
+            >
               <FiDownload size={16} /> PDF
             </button>
-            <button onClick={handleDocx}
-              className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm">
+            <button
+              onClick={handleDocx}
+              className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm"
+            >
               <FiDownload size={16} /> DOCX
             </button>
           </div>
         )}
       </div>
 
-      <div className="flex items-center gap-4 mb-6 no-print">
+      {/* Filtros */}
+      <div className="flex flex-wrap items-end gap-4 mb-6 no-print">
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">De</label>
-          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-            className="px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm" />
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm"
+          />
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Até</label>
-          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
-            className="px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm" />
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Setor</label>
+          <select
+            value={filterSector}
+            onChange={(e) => { setFilterSector(e.target.value); setFilterPosition(""); }}
+            className="px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm"
+          >
+            <option value="">Todos</option>
+            {uniqueSectors.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Cargo</label>
+          <select
+            value={filterPosition}
+            onChange={(e) => setFilterPosition(e.target.value)}
+            disabled={uniquePositions.length === 0}
+            className="px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm disabled:opacity-50"
+          >
+            <option value="">Todos</option>
+            {uniquePositions.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -108,8 +165,14 @@ export default function CompanyReportPage() {
             <img src="/logo-horizontal.png" alt="ErgoAnálise" className="h-14 w-auto" />
           </div>
           <h1 className="text-2xl font-bold text-slate-800">Relatório de Queixas de Dores</h1>
-          <p className="text-slate-500 text-sm mt-1">{company.name} - {company.cnpj} - {company.city}</p>
-          <p className="text-slate-400 text-xs mt-1">Gerado em {new Date().toLocaleDateString("pt-BR")} | {companySurveys.length} respostas coletadas</p>
+          <p className="text-slate-500 text-sm mt-1">
+            {company.name} - {company.cnpj} - {company.city}
+          </p>
+          <p className="text-slate-400 text-xs mt-1">
+            Gerado em {new Date().toLocaleDateString("pt-BR")} | {companySurveys.length} respostas coletadas
+            {filterSector && ` | Setor: ${filterSector}`}
+            {filterPosition && ` | Cargo: ${filterPosition}`}
+          </p>
         </div>
 
         <div className="px-2 mb-4">
@@ -118,7 +181,7 @@ export default function CompanyReportPage() {
 
         {companySurveys.length === 0 ? (
           <div className="rounded-xl border border-slate-200 p-12 text-center text-slate-400">
-            Nenhuma resposta coletada para esta empresa.
+            Nenhuma resposta coletada para este filtro.
           </div>
         ) : (
           <div className="space-y-6">
@@ -174,11 +237,26 @@ export default function CompanyReportPage() {
                           {(survey.painAreas || []).length} queixa(s)
                         </p>
                         {[...(survey.painAreas || [])]
-                          .sort((a, b) => ({ alta: 0, media: 1, baixa: 2 }[a.intensity] ?? 2) - ({ alta: 0, media: 1, baixa: 2 }[b.intensity] ?? 2))
+                          .sort(
+                            (a, b) =>
+                              ({ alta: 0, media: 1, baixa: 2 }[a.intensity] ?? 2) -
+                              ({ alta: 0, media: 1, baixa: 2 }[b.intensity] ?? 2)
+                          )
                           .map((p) => {
-                            const colorClass = p.intensity === "alta" ? "border-l-red-500 bg-red-50" : p.intensity === "media" ? "border-l-yellow-500 bg-yellow-50" : "border-l-blue-500 bg-blue-50";
-                            const textColor = p.intensity === "alta" ? "text-red-700" : p.intensity === "media" ? "text-yellow-700" : "text-blue-700";
-                            const levelLabel = p.intensity === "alta" ? "ALTA" : p.intensity === "media" ? "MÉDIA" : "BAIXA";
+                            const colorClass =
+                              p.intensity === "alta"
+                                ? "border-l-red-500 bg-red-50"
+                                : p.intensity === "media"
+                                ? "border-l-yellow-500 bg-yellow-50"
+                                : "border-l-blue-500 bg-blue-50";
+                            const textColor =
+                              p.intensity === "alta"
+                                ? "text-red-700"
+                                : p.intensity === "media"
+                                ? "text-yellow-700"
+                                : "text-blue-700";
+                            const levelLabel =
+                              p.intensity === "alta" ? "ALTA" : p.intensity === "media" ? "MÉDIA" : "BAIXA";
                             return (
                               <div key={p.region} className={`border-l-4 rounded-r-lg px-3 py-2 ${colorClass}`}>
                                 <div className="flex items-center justify-between">

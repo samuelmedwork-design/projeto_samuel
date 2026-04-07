@@ -40,10 +40,22 @@ export default function AssessmentDetailPage() {
   const [editWorker, setEditWorker] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Extrai notas e foto do posto a partir do general_notes (pode ser JSON ou texto puro)
+  const parseNotes = (raw: string) => {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object" && "notes" in parsed) {
+        return { text: (parsed.notes as string) || "", photo: (parsed.workstationPhoto as string) || "" };
+      }
+    } catch {}
+    return { text: raw, photo: "" };
+  };
+
   const startEdit = () => {
     if (!assessment) return;
     setEditBlocks(JSON.parse(JSON.stringify(assessment.filledBlocks || [])));
-    setEditNotes(assessment.generalNotes || "");
+    const { text } = parseNotes(assessment.generalNotes || "");
+    setEditNotes(text);
     setEditWorkstation(assessment.workstation || "");
     setEditWorker(assessment.observedWorker || "");
     setEditing(true);
@@ -54,9 +66,12 @@ export default function AssessmentDetailPage() {
   const saveEdit = async () => {
     if (!assessment) return;
     setSaving(true);
+    // Preserva a foto do posto ao salvar em modo de edição
+    const { photo } = parseNotes(assessment.generalNotes || "");
+    const savedNotes = photo ? JSON.stringify({ notes: editNotes, workstationPhoto: photo }) : editNotes;
     await updateAssessment(assessmentId, {
       filledBlocks: editBlocks,
-      generalNotes: editNotes,
+      generalNotes: savedNotes,
       workstation: editWorkstation,
       observedWorker: editWorker,
     });
@@ -134,7 +149,10 @@ export default function AssessmentDetailPage() {
   }
 
   const displayBlocks = editing ? editBlocks : (assessment.filledBlocks || []);
-  const displayNotes = editing ? editNotes : (assessment.generalNotes || "");
+  const { text: displayNotesText, photo: displayWorkstationPhoto } = parseNotes(
+    editing ? editNotes : (assessment.generalNotes || "")
+  );
+  const displayNotes = editing ? editNotes : displayNotesText;
 
   const nonConformities = displayBlocks.flatMap((block) =>
     (block.answers || []).filter(
@@ -344,6 +362,18 @@ export default function AssessmentDetailPage() {
             </div>
           ))}
         </div>
+
+        {/* Foto do posto */}
+        {!editing && displayWorkstationPhoto && (
+          <div className="mt-6 bg-white rounded-xl border border-slate-200 p-6">
+            <h3 className="font-semibold text-slate-800 mb-3">Foto do Posto de Trabalho</h3>
+            <img
+              src={displayWorkstationPhoto}
+              alt="Foto do posto"
+              className="max-w-full max-h-80 object-contain rounded-lg border border-slate-200"
+            />
+          </div>
+        )}
 
         {/* Observações gerais */}
         {editing ? (

@@ -194,6 +194,8 @@ export default function SurveyPage() {
     if (!position) errors.push("Cargo é obrigatório");
     if (!sex) errors.push("Sexo é obrigatório");
     if (!height) errors.push("Altura é obrigatória");
+    else if (height.length !== 3 || Number(height) < 100 || Number(height) > 220)
+      errors.push("Altura deve ser entre 100 e 220 cm (somente números, sem pontos ou vírgulas)");
     if (!weight) errors.push("Peso é obrigatório");
     setStepErrors(errors);
     return errors.length === 0;
@@ -432,8 +434,16 @@ export default function SurveyPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Altura (cm) <span className="text-red-500">*</span></label>
-                  <input type="number" value={height} onChange={(e) => setHeight(e.target.value)} placeholder="Ex: 170"
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={3}
+                    value={height}
+                    onChange={(e) => setHeight(e.target.value.replace(/[^0-9]/g, ""))}
+                    placeholder="Ex: 170"
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Peso (kg) <span className="text-red-500">*</span></label>
