@@ -8,7 +8,7 @@ import {
   FiAlertTriangle,
   FiXCircle,
 } from "react-icons/fi";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 /* ─── Reusable SVG horizontal bar chart ─────────────────────────────── */
 function HorizontalBarChart({
@@ -192,6 +192,7 @@ function DonutChart({
 /* ─── Company Dashboard ─────────────────────────────────────────────── */
 export default function CompanyDashboardPage() {
   const { companies, surveys, assessments, sectors, positions } = useData();
+  const [statSector, setStatSector] = useState("");
   const params = useParams();
   const router = useRouter();
 
@@ -278,6 +279,31 @@ export default function CompanyDashboardPage() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10) as [string, number][];
   }, [companySurveys]);
+
+  /* Sexo, Altura e Peso */
+  const sectorNames = useMemo(
+    () => [...new Set(companySurveys.map((s) => s.sector).filter(Boolean))].sort(),
+    [companySurveys]
+  );
+  const statsFiltered = statSector
+    ? companySurveys.filter((s) => s.sector === statSector)
+    : companySurveys;
+
+  const maleCount = companySurveys.filter((s) => s.sex === "Masculino").length;
+  const femaleCount = companySurveys.filter((s) => s.sex === "Feminino").length;
+  const totalWithSex = maleCount + femaleCount;
+
+  const heightSamples = statsFiltered.filter((s) => (s.height ?? 0) > 0);
+  const avgHeight =
+    heightSamples.length > 0
+      ? (heightSamples.reduce((sum, s) => sum + (s.height ?? 0), 0) / heightSamples.length).toFixed(1)
+      : null;
+
+  const weightSamples = statsFiltered.filter((s) => (s.weight ?? 0) > 0);
+  const avgWeight =
+    weightSamples.length > 0
+      ? (weightSamples.reduce((sum, s) => sum + (s.weight ?? 0), 0) / weightSamples.length).toFixed(1)
+      : null;
 
   /* Sector status table */
   const sectorStatus = useMemo(() => {
@@ -376,6 +402,82 @@ export default function CompanyDashboardPage() {
           </div>
         ))}
       </div>
+
+      {/* Sexo / Altura / Peso */}
+      {companySurveys.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-sm font-medium text-slate-600">Filtrar altura/peso por setor:</span>
+            <select
+              value={statSector}
+              onChange={(e) => setStatSector(e.target.value)}
+              className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+            >
+              <option value="">Todos os setores</option>
+              {sectorNames.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Gráfico pizza — Sexo */}
+            <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+              <p className="text-sm font-semibold text-slate-600 mb-4">Distribuição por Sexo</p>
+              <div className="flex items-center gap-5">
+                <div className="relative w-20 h-20 flex-shrink-0">
+                  <div
+                    className="w-20 h-20 rounded-full"
+                    style={{
+                      background:
+                        totalWithSex === 0
+                          ? "#e2e8f0"
+                          : `conic-gradient(#3b82f6 ${(maleCount / totalWithSex) * 360}deg, #ec4899 ${(maleCount / totalWithSex) * 360}deg 360deg)`,
+                    }}
+                  />
+                  <div className="absolute inset-[18%] bg-white rounded-full" />
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-blue-500 flex-shrink-0" />
+                    <span className="text-slate-600">Masculino: <strong>{maleCount}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-pink-500 flex-shrink-0" />
+                    <span className="text-slate-600">Feminino: <strong>{femaleCount}</strong></span>
+                  </div>
+                  {totalWithSex < companySurveys.length && (
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-slate-300 flex-shrink-0" />
+                      <span className="text-slate-400 text-xs">Não inf.: {companySurveys.length - totalWithSex}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Altura média */}
+            <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+              <p className="text-sm font-semibold text-slate-600 mb-1">Altura Média</p>
+              {statSector && <p className="text-xs text-slate-400 mb-2">{statSector}</p>}
+              <p className="text-3xl font-bold text-emerald-600">
+                {avgHeight ? `${avgHeight} cm` : "—"}
+              </p>
+              <p className="text-xs text-slate-400 mt-1">{heightSamples.length} registro(s) com altura</p>
+            </div>
+
+            {/* Peso médio */}
+            <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+              <p className="text-sm font-semibold text-slate-600 mb-1">Peso Médio</p>
+              {statSector && <p className="text-xs text-slate-400 mb-2">{statSector}</p>}
+              <p className="text-3xl font-bold text-emerald-600">
+                {avgWeight ? `${avgWeight} kg` : "—"}
+              </p>
+              <p className="text-xs text-slate-400 mt-1">{weightSamples.length} registro(s) com peso</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Status de Preenchimento */}
       <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm mb-8">
