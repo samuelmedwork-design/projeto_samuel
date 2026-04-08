@@ -556,7 +556,7 @@ export default function SurveyPage() {
                                   onClick={() => togglePainRegion(region)}
                                   className={`flex flex-col items-center gap-2 p-3 rounded-xl text-sm font-medium transition-colors border ${
                                     active
-                                      ? "bg-red-50 border-red-300 text-red-700"
+                                      ? "bg-blue-50 border-blue-400 text-blue-700"
                                       : "bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50"
                                   }`}
                                 >
@@ -568,7 +568,7 @@ export default function SurveyPage() {
                                     />
                                   )}
                                   <span className="text-center leading-tight">{region}</span>
-                                  <span className={`text-base font-bold ${active ? "text-red-400" : "text-slate-300"}`}>
+                                  <span className={`text-base font-bold ${active ? "text-blue-500" : "text-slate-300"}`}>
                                     {active ? "✓ Selecionado" : "+ Selecionar"}
                                   </span>
                                 </button>
@@ -583,8 +583,8 @@ export default function SurveyPage() {
                                 const active = activeInPair[i];
                                 if (!active) return null;
                                 return (
-                                  <div key={region} className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
-                                    <p className="text-sm font-semibold text-red-800">{region}</p>
+                                  <div key={region} className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+                                    <p className="text-sm font-semibold text-blue-800">{region}</p>
 
                                     {/* Lateralidade (somente quando aplicável) */}
                                     {hasLateral && (
