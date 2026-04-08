@@ -529,167 +529,123 @@ export default function SurveyPage() {
                 Toque no segmento corporal onde sente dor ou desconforto. Após selecionar, preencha as informações que aparecerem abaixo.
               </p>
 
-              {/* Segmentos SEM lateralidade */}
-              <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Segmentos centrais</p>
-                <div className="flex flex-col gap-2">
-                  {BODY_REGIONS_NO_LATERAL.map((region) => {
-                    const active = painAreas.find((p) => p.region === region);
-                    const img = BODY_SEGMENT_IMAGES[region];
-                    return (
-                      <div key={region}>
-                        {/* Botão do segmento */}
-                        <button
-                          type="button"
-                          onClick={() => togglePainRegion(region)}
-                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors border ${
-                            active
-                              ? "bg-red-50 border-red-300 text-red-700"
-                              : "bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50"
-                          }`}
-                        >
-                          {img && (
-                            <img
-                              src={img}
-                              alt={region}
-                              className="w-10 h-10 object-contain rounded flex-shrink-0"
-                            />
-                          )}
-                          <span className="flex-1 text-left">{region}</span>
-                          <span className={`text-lg ${active ? "text-red-400" : "text-slate-300"}`}>
-                            {active ? "✓" : "+"}
-                          </span>
-                        </button>
-
-                        {/* Detalhamento inline quando selecionado */}
-                        {active && (
-                          <div className="mt-1 mb-1 ml-4 bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
-                            {/* Intensidade */}
-                            <div>
-                              <label className="text-xs font-medium text-slate-600 mb-1.5 block">Intensidade da dor <span className="text-red-500">*</span></label>
-                              <div className="flex gap-2 flex-wrap">
-                                {(["baixa", "media", "alta"] as PainIntensity[]).map((int) => {
-                                  const cls = int === "baixa" ? "bg-blue-500 border-blue-500" : int === "media" ? "bg-yellow-500 border-yellow-500" : "bg-red-500 border-red-500";
-                                  return (
-                                    <button key={int} type="button" onClick={() => updatePain(region, { intensity: int })}
-                                      className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                                        active.intensity === int ? `${cls} text-white` : "bg-white border-slate-300 text-slate-600"
-                                      }`}>
-                                      {int === "baixa" ? "Baixa" : int === "media" ? "Média" : "Alta"}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                            {/* Relação com jornada */}
-                            <div>
-                              <label className="text-xs font-medium text-slate-600 mb-1.5 block">Relação com a jornada <span className="text-red-500">*</span></label>
-                              <div className="grid grid-cols-1 gap-1.5">
-                                {(Object.keys(WORK_RELATION_LABELS) as WorkRelation[]).map((wr) => (
-                                  <button key={wr} type="button" onClick={() => updatePain(region, { workRelation: wr })}
-                                    className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors text-left ${
-                                      active.workRelation === wr ? "bg-slate-800 text-white border-slate-800" : "bg-white border-slate-300 text-slate-600"
-                                    }`}>
-                                    {WORK_RELATION_LABELS[wr]}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
+              {/* Helper: renderiza lista de regiões em pares com painel de detalhe inline */}
+              {([
+                { label: "Segmentos centrais", regions: BODY_REGIONS_NO_LATERAL, hasLateral: false },
+                { label: "Segmentos com lateralidade", regions: BODY_REGIONS_WITH_LATERAL, hasLateral: true },
+              ] as { label: string; regions: string[]; hasLateral: boolean }[]).map(({ label, regions, hasLateral }) => (
+                <div key={label}>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{label}</p>
+                  <div className="space-y-2">
+                    {/* Renderiza em pares */}
+                    {Array.from({ length: Math.ceil(regions.length / 2) }, (_, rowIdx) => {
+                      const pair = regions.slice(rowIdx * 2, rowIdx * 2 + 2);
+                      const activeInPair = pair.map((r) => painAreas.find((p) => p.region === r));
+                      const anyActive = activeInPair.some(Boolean);
+                      return (
+                        <div key={rowIdx}>
+                          {/* Par de cards */}
+                          <div className="grid grid-cols-2 gap-2">
+                            {pair.map((region, i) => {
+                              const active = activeInPair[i];
+                              const img = BODY_SEGMENT_IMAGES[region];
+                              return (
+                                <button
+                                  key={region}
+                                  type="button"
+                                  onClick={() => togglePainRegion(region)}
+                                  className={`flex flex-col items-center gap-2 p-3 rounded-xl text-sm font-medium transition-colors border ${
+                                    active
+                                      ? "bg-red-50 border-red-300 text-red-700"
+                                      : "bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                                  }`}
+                                >
+                                  {img && (
+                                    <img
+                                      src={img}
+                                      alt={region}
+                                      className="w-20 h-20 object-contain"
+                                    />
+                                  )}
+                                  <span className="text-center leading-tight">{region}</span>
+                                  <span className={`text-base font-bold ${active ? "text-red-400" : "text-slate-300"}`}>
+                                    {active ? "✓ Selecionado" : "+ Selecionar"}
+                                  </span>
+                                </button>
+                              );
+                            })}
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
 
-              {/* Segmentos COM lateralidade */}
-              <div className="mt-4">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Segmentos com lateralidade</p>
-                <div className="flex flex-col gap-2">
-                  {BODY_REGIONS_WITH_LATERAL.map((region) => {
-                    const active = painAreas.find((p) => p.region === region);
-                    const img = BODY_SEGMENT_IMAGES[region];
-                    return (
-                      <div key={region}>
-                        {/* Botão do segmento */}
-                        <button
-                          type="button"
-                          onClick={() => togglePainRegion(region)}
-                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors border ${
-                            active
-                              ? "bg-red-50 border-red-300 text-red-700"
-                              : "bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50"
-                          }`}
-                        >
-                          {img && (
-                            <img
-                              src={img}
-                              alt={region}
-                              className="w-10 h-10 object-contain rounded flex-shrink-0"
-                            />
+                          {/* Painéis de detalhe para cada selecionado do par */}
+                          {anyActive && (
+                            <div className="mt-2 space-y-2">
+                              {pair.map((region, i) => {
+                                const active = activeInPair[i];
+                                if (!active) return null;
+                                return (
+                                  <div key={region} className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
+                                    <p className="text-sm font-semibold text-red-800">{region}</p>
+
+                                    {/* Lateralidade (somente quando aplicável) */}
+                                    {hasLateral && (
+                                      <div>
+                                        <label className="text-xs font-medium text-slate-600 mb-1.5 block">Lateralidade <span className="text-red-500">*</span></label>
+                                        <div className="flex gap-2 flex-wrap">
+                                          {(["direito", "esquerdo", "ambos", "nsa"] as Laterality[]).map((side) => (
+                                            <button key={side} type="button" onClick={() => updatePain(region, { side })}
+                                              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                                                active.side === side ? "bg-slate-800 text-white border-slate-800" : "bg-white border-slate-300 text-slate-600"
+                                              }`}>
+                                              {side === "nsa" ? "N/A" : side.charAt(0).toUpperCase() + side.slice(1)}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Intensidade */}
+                                    <div>
+                                      <label className="text-xs font-medium text-slate-600 mb-1.5 block">Intensidade da dor <span className="text-red-500">*</span></label>
+                                      <div className="flex gap-2 flex-wrap">
+                                        {(["baixa", "media", "alta"] as PainIntensity[]).map((int) => {
+                                          const cls = int === "baixa" ? "bg-blue-500 border-blue-500" : int === "media" ? "bg-yellow-500 border-yellow-500" : "bg-red-500 border-red-500";
+                                          return (
+                                            <button key={int} type="button" onClick={() => updatePain(region, { intensity: int })}
+                                              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                                                active.intensity === int ? `${cls} text-white` : "bg-white border-slate-300 text-slate-600"
+                                              }`}>
+                                              {int === "baixa" ? "Baixa" : int === "media" ? "Média" : "Alta"}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+
+                                    {/* Relação com jornada */}
+                                    <div>
+                                      <label className="text-xs font-medium text-slate-600 mb-1.5 block">Relação com a jornada <span className="text-red-500">*</span></label>
+                                      <div className="grid grid-cols-1 gap-1.5">
+                                        {(Object.keys(WORK_RELATION_LABELS) as WorkRelation[]).map((wr) => (
+                                          <button key={wr} type="button" onClick={() => updatePain(region, { workRelation: wr })}
+                                            className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors text-left ${
+                                              active.workRelation === wr ? "bg-slate-800 text-white border-slate-800" : "bg-white border-slate-300 text-slate-600"
+                                            }`}>
+                                            {WORK_RELATION_LABELS[wr]}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           )}
-                          <span className="flex-1 text-left">{region}</span>
-                          <span className={`text-lg ${active ? "text-red-400" : "text-slate-300"}`}>
-                            {active ? "✓" : "+"}
-                          </span>
-                        </button>
-
-                        {/* Detalhamento inline quando selecionado */}
-                        {active && (
-                          <div className="mt-1 mb-1 ml-4 bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
-                            {/* Lateralidade */}
-                            <div>
-                              <label className="text-xs font-medium text-slate-600 mb-1.5 block">Lateralidade <span className="text-red-500">*</span></label>
-                              <div className="flex gap-2 flex-wrap">
-                                {(["direito", "esquerdo", "ambos", "nsa"] as Laterality[]).map((side) => (
-                                  <button key={side} type="button" onClick={() => updatePain(region, { side })}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                                      active.side === side ? "bg-slate-800 text-white border-slate-800" : "bg-white border-slate-300 text-slate-600"
-                                    }`}>
-                                    {side === "nsa" ? "N/A" : side.charAt(0).toUpperCase() + side.slice(1)}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                            {/* Intensidade */}
-                            <div>
-                              <label className="text-xs font-medium text-slate-600 mb-1.5 block">Intensidade da dor <span className="text-red-500">*</span></label>
-                              <div className="flex gap-2 flex-wrap">
-                                {(["baixa", "media", "alta"] as PainIntensity[]).map((int) => {
-                                  const cls = int === "baixa" ? "bg-blue-500 border-blue-500" : int === "media" ? "bg-yellow-500 border-yellow-500" : "bg-red-500 border-red-500";
-                                  return (
-                                    <button key={int} type="button" onClick={() => updatePain(region, { intensity: int })}
-                                      className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                                        active.intensity === int ? `${cls} text-white` : "bg-white border-slate-300 text-slate-600"
-                                      }`}>
-                                      {int === "baixa" ? "Baixa" : int === "media" ? "Média" : "Alta"}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                            {/* Relação com jornada */}
-                            <div>
-                              <label className="text-xs font-medium text-slate-600 mb-1.5 block">Relação com a jornada <span className="text-red-500">*</span></label>
-                              <div className="grid grid-cols-1 gap-1.5">
-                                {(Object.keys(WORK_RELATION_LABELS) as WorkRelation[]).map((wr) => (
-                                  <button key={wr} type="button" onClick={() => updatePain(region, { workRelation: wr })}
-                                    className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors text-left ${
-                                      active.workRelation === wr ? "bg-slate-800 text-white border-slate-800" : "bg-white border-slate-300 text-slate-600"
-                                    }`}>
-                                    {WORK_RELATION_LABELS[wr]}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              ))}
 
               <div className="flex gap-3 mt-6">
                 <button onClick={() => { setStepErrors([]); setStep(1); }}
