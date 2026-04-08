@@ -554,7 +554,7 @@ export default function SurveyPage() {
                                   key={region}
                                   type="button"
                                   onClick={() => togglePainRegion(region)}
-                                  className={`flex flex-col items-center gap-2 p-3 rounded-xl text-sm font-medium transition-colors border ${
+                                  className={`flex flex-row items-center gap-3 p-3 rounded-xl text-sm font-medium transition-colors border ${
                                     active
                                       ? "bg-blue-50 border-blue-400 text-blue-700"
                                       : "bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50"
@@ -564,13 +564,10 @@ export default function SurveyPage() {
                                     <img
                                       src={img}
                                       alt={region}
-                                      className="w-20 h-20 object-contain"
+                                      className="w-20 h-20 object-contain flex-shrink-0"
                                     />
                                   )}
-                                  <span className="text-center leading-tight">{region}</span>
-                                  <span className={`text-base font-bold ${active ? "text-blue-500" : "text-slate-300"}`}>
-                                    {active ? "✓ Selecionado" : "+ Selecionar"}
-                                  </span>
+                                  <span className="text-left leading-tight">{region}</span>
                                 </button>
                               );
                             })}
