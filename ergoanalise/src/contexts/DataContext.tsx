@@ -367,6 +367,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   // ── Positions ──
   const addPosition = async (p: Omit<Position, "id">) => {
+    const duplicate = positions.find(
+      (pos) => pos.sectorId === p.sectorId && pos.name.trim().toLowerCase() === p.name.trim().toLowerCase()
+    );
+    if (duplicate) throw new Error(`Já existe um cargo com o nome "${p.name}" neste setor.`);
     const { data, error } = await supabase.from("positions").insert({ sector_id: p.sectorId, company_id: p.companyId, name: p.name }).select().single();
     if (error || !data) { console.error("addPosition error:", error); throw new Error(error?.message || "Erro ao criar cargo"); }
     const pos = mapPosition(data);

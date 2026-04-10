@@ -59,9 +59,13 @@ export default function StructurePage() {
   const handleAddPosition = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!posName.trim() || !selectedSector) return;
-    await addPosition({ companyId: id, sectorId: selectedSector, name: posName.trim() });
-    setPosName("");
-    toast("Cargo criado com sucesso!");
+    try {
+      await addPosition({ companyId: id, sectorId: selectedSector, name: posName.trim() });
+      setPosName("");
+      toast("Cargo criado com sucesso!");
+    } catch (err: any) {
+      toast(err?.message || "Erro ao criar cargo.", "error");
+    }
   };
 
   // Gera link com dados embarcados em base64 URL-safe (sem +, /, = que quebram ao compartilhar)
@@ -148,9 +152,13 @@ export default function StructurePage() {
             newSectorsCount++;
           }
 
-          // Cria cargo (cargos com mesmo nome em setores distintos são permitidos)
-          await addPosition({ companyId: id, sectorId, name: positionNameRaw });
-          newPositionsCount++;
+          // Cria cargo (ignora duplicatas no mesmo setor)
+          try {
+            await addPosition({ companyId: id, sectorId, name: positionNameRaw });
+            newPositionsCount++;
+          } catch {
+            // Cargo duplicado no setor — ignora e continua
+          }
         }
 
         setImportResult({ sectors: newSectorsCount, positions: newPositionsCount });
