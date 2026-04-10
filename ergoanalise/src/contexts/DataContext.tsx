@@ -171,16 +171,33 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [anthroRanges, setAnthroRanges] = useState<AnthroRange[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Busca todos os registros de uma tabela ignorando o limite padrão de 1000 linhas do PostgREST
+  const fetchAll = async (table: string, columns = "*") => {
+    const PAGE = 1000;
+    let offset = 0;
+    let all: any[] = [];
+    while (true) {
+      const { data, error } = await (supabase.from(table) as any)
+        .select(columns)
+        .range(offset, offset + PAGE - 1);
+      if (error || !data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < PAGE) break;
+      offset += PAGE;
+    }
+    return all;
+  };
+
   const loadAllData = async () => {
     try {
-      const [c, s, p] = await Promise.all([
+      const [c, s] = await Promise.all([
         supabase.from("companies").select("*"),
         supabase.from("sectors").select("*"),
-        supabase.from("positions").select("*"),
       ]);
+      const allPositions = await fetchAll("positions");
       setCompanies((c.data || []).map(mapCompany));
       setSectors((s.data || []).map(mapSector));
-      setPositions((p.data || []).map(mapPosition));
+      setPositions(allPositions.map(mapPosition));
 
       const [sv, a, ac] = await Promise.all([
         supabase.from("surveys").select(SURVEY_LIST_SELECT).order("created_at", { ascending: false }),
