@@ -5,12 +5,13 @@ import { usePathname } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
 import {
   FiHome, FiClipboard, FiActivity, FiFileText, FiLogOut, FiUser,
-  FiGrid, FiList, FiMenu, FiX, FiBarChart2, FiChevronLeft, FiChevronRight,
+  FiGrid, FiList, FiMenu, FiX, FiBarChart2, FiChevronLeft, FiChevronRight, FiUsers,
 } from "react-icons/fi";
 
 const links = [
   { href: "/dashboard", label: "Dashboard", icon: FiBarChart2 },
   { href: "/companies", label: "Empresas", icon: FiHome },
+  { href: "/avaliadores", label: "Avaliadores", icon: FiUsers },
   { href: "/blocks", label: "Blocos", icon: FiGrid },
   { href: "/checklist-templates", label: "Checklists", icon: FiList },
   { href: "/assessments", label: "Avaliações", icon: FiClipboard },

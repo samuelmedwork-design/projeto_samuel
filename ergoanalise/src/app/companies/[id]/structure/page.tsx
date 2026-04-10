@@ -10,14 +10,18 @@ import { useToast } from "@/components/Toast";
 export default function StructurePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { companies, sectors, positions, surveys, addSector, deleteSector, addPosition, deletePosition, updateCompany } = useData();
+  const { companies, sectors, positions, surveys, addSector, deleteSector, addPosition, updatePosition, deletePosition, updateCompany } = useData();
   const { toast } = useToast();
   const company = companies.find((c) => c.id === id);
 
   const [sectorName, setSectorName] = useState("");
   const [posName, setPosName] = useState("");
+  const [posDescricao, setPosDescricao] = useState("");
   const [selectedSector, setSelectedSector] = useState("");
   const [copied, setCopied] = useState(false);
+
+  // Edição de cargo (descrição)
+  const [editingPos, setEditingPos] = useState<{ id: string; name: string; descricao: string } | null>(null);
 
   // Edição de dados da empresa
   const [editingCompany, setEditingCompany] = useState(false);
@@ -60,12 +64,20 @@ export default function StructurePage() {
     e.preventDefault();
     if (!posName.trim() || !selectedSector) return;
     try {
-      await addPosition({ companyId: id, sectorId: selectedSector, name: posName.trim() });
+      await addPosition({ companyId: id, sectorId: selectedSector, name: posName.trim(), descricao: posDescricao.trim() || undefined });
       setPosName("");
+      setPosDescricao("");
       toast("Cargo criado com sucesso!");
     } catch (err: any) {
       toast(err?.message || "Erro ao criar cargo.", "error");
     }
+  };
+
+  const savePositionEdit = async () => {
+    if (!editingPos) return;
+    await updatePosition(editingPos.id, { descricao: editingPos.descricao.trim() });
+    toast("Descrição salva!");
+    setEditingPos(null);
   };
 
   // Gera link com dados embarcados em base64 URL-safe (sem +, /, = que quebram ao compartilhar)
@@ -360,46 +372,87 @@ export default function StructurePage() {
         <div>
           <h2 className="text-lg font-semibold text-slate-800 mb-4">Cargos</h2>
           <form onSubmit={handleAddPosition} className="space-y-2 mb-4">
-            <select
-              value={selectedSector}
-              onChange={(e) => setSelectedSector(e.target.value)}
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-            >
+            <select value={selectedSector} onChange={(e) => setSelectedSector(e.target.value)}
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
               <option value="">Selecione o setor</option>
-              {companySectors.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
+              {companySectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
             <div className="flex gap-2">
-              <input
-                value={posName}
-                onChange={(e) => setPosName(e.target.value)}
-                placeholder="Nome do cargo"
-                className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-              />
+              <input value={posName} onChange={(e) => setPosName(e.target.value)} placeholder="Nome do cargo"
+                className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
               <button type="submit" className="p-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
                 <FiPlus size={18} />
               </button>
+            </div>
+            <div>
+              <textarea value={posDescricao} onChange={(e) => setPosDescricao(e.target.value.slice(0, 500))}
+                placeholder="Descrição da função (opcional)"
+                rows={2} maxLength={500}
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none resize-none text-sm" />
+              <p className="text-xs text-slate-400 text-right">{posDescricao.length}/500</p>
             </div>
           </form>
           <div className="space-y-2">
             {companySectors.map((s) =>
               sectorPositions(s.id).map((p) => (
-                <div key={p.id} className="bg-white border border-slate-200 rounded-lg p-4 flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-slate-800">{p.name}</p>
-                    <p className="text-xs text-slate-400 mt-1">Setor: {s.name}</p>
+                <div key={p.id} className="bg-white border border-slate-200 rounded-lg p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-slate-800">{p.name}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">Setor: {s.name}</p>
+                      {p.descricao ? (
+                        <p className="text-xs text-slate-500 mt-1 line-clamp-2">{p.descricao}</p>
+                      ) : (
+                        <p className="text-xs text-amber-500 mt-1">Sem descrição da função</p>
+                      )}
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      <button onClick={() => setEditingPos({ id: p.id, name: p.name, descricao: p.descricao || "" })}
+                        className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Editar descrição">
+                        <FiEdit2 size={15} />
+                      </button>
+                      <button onClick={() => { if (confirm(`Excluir o cargo "${p.name}"?`)) deletePosition(p.id); }}
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Excluir cargo">
+                        <FiTrash2 size={15} />
+                      </button>
+                    </div>
                   </div>
-                  <button onClick={() => { if (confirm(`Excluir o cargo "${p.name}"?`)) deletePosition(p.id); }}
-                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Excluir cargo">
-                    <FiTrash2 size={15} />
-                  </button>
                 </div>
               ))
             )}
           </div>
         </div>
       </div>
+
+      {/* Modal edição de descrição do cargo */}
+      {editingPos && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 w-full max-w-lg mx-4 space-y-4">
+            <h2 className="text-lg font-semibold text-slate-800">Descrição da Função</h2>
+            <p className="text-sm font-medium text-slate-700">{editingPos.name}</p>
+            <div>
+              <textarea
+                value={editingPos.descricao}
+                onChange={(e) => setEditingPos((prev) => prev ? { ...prev, descricao: e.target.value.slice(0, 500) } : null)}
+                placeholder="Descreva as atividades e responsabilidades deste cargo..."
+                rows={6} maxLength={500}
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none resize-none text-sm"
+              />
+              <p className="text-xs text-slate-400 text-right mt-1">{editingPos.descricao.length}/500</p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setEditingPos(null)}
+                className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors">
+                Cancelar
+              </button>
+              <button onClick={savePositionEdit}
+                className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium">
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

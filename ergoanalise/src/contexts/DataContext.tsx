@@ -4,9 +4,14 @@ import { supabase } from "@/lib/supabase";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 // ─── Types ───────────────────────────────────────────────────────────
-export interface Company { id: string; name: string; cnpj: string; city: string; }
+export interface Company {
+  id: string; name: string; cnpj: string; city: string;
+  razaoSocial?: string; endereco?: string; cnaePrincipal?: string;
+  telefone?: string; email?: string; logoUrl?: string; conclusaoAet?: string;
+}
 export interface Sector { id: string; companyId: string; name: string; }
-export interface Position { id: string; sectorId: string; companyId: string; name: string; }
+export interface Position { id: string; sectorId: string; companyId: string; name: string; descricao?: string; }
+export interface Avaliador { id: string; nome: string; cpf?: string; formacao?: string; registroProfissional?: string; }
 
 export type PainIntensity = "baixa" | "media" | "alta";
 export type Laterality = "direito" | "esquerdo" | "ambos" | "nsa";
@@ -82,6 +87,7 @@ interface DataContextType {
   blocks: ChecklistBlock[];
   templates: ChecklistTemplate[];
   anthroRanges: AnthroRange[];
+  avaliadores: Avaliador[];
   loading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
@@ -96,7 +102,11 @@ interface DataContextType {
   addSector: (s: Omit<Sector, "id">) => Promise<Sector>;
   deleteSector: (id: string) => Promise<void>;
   addPosition: (p: Omit<Position, "id">) => Promise<Position>;
+  updatePosition: (id: string, data: Partial<Omit<Position, "id">>) => Promise<void>;
   deletePosition: (id: string) => Promise<void>;
+  addAvaliador: (a: Omit<Avaliador, "id">) => Promise<Avaliador>;
+  updateAvaliador: (id: string, data: Partial<Avaliador>) => Promise<void>;
+  deleteAvaliador: (id: string) => Promise<void>;
   addSurvey: (s: Omit<SurveyResponse, "id" | "createdAt">) => Promise<void>;
   updateSurvey: (id: string, data: Partial<SurveyResponse>) => Promise<void>;
   deleteSurvey: (id: string) => Promise<void>;
@@ -127,9 +137,17 @@ export function useData() {
 }
 
 // ─── Helper: map DB row to app type ─────────────────────────────────
-function mapCompany(r: any): Company { return { id: r.id, name: r.name, cnpj: r.cnpj, city: r.city }; }
+function mapCompany(r: any): Company {
+  return {
+    id: r.id, name: r.nome_fantasia || r.name, cnpj: r.cnpj, city: r.city || '',
+    razaoSocial: r.razao_social || '', endereco: r.endereco || '',
+    cnaePrincipal: r.cnae_principal || '', telefone: r.telefone || '',
+    email: r.email || '', logoUrl: r.logo_url || '', conclusaoAet: r.conclusao_aet || '',
+  };
+}
 function mapSector(r: any): Sector { return { id: r.id, companyId: r.company_id, name: r.name }; }
-function mapPosition(r: any): Position { return { id: r.id, sectorId: r.sector_id, companyId: r.company_id, name: r.name }; }
+function mapPosition(r: any): Position { return { id: r.id, sectorId: r.sector_id, companyId: r.company_id, name: r.name, descricao: r.descricao || '' }; }
+function mapAvaliador(r: any): Avaliador { return { id: r.id, nome: r.nome, cpf: r.cpf || '', formacao: r.formacao || '', registroProfissional: r.registro_profissional || '' }; }
 function mapSurvey(r: any): SurveyResponse {
   return {
     id: r.id, companyId: r.company_id, workerName: r.worker_name, sector: r.sector,
@@ -169,6 +187,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [blocks, setBlocks] = useState<ChecklistBlock[]>([]);
   const [templates, setTemplates] = useState<ChecklistTemplate[]>([]);
   const [anthroRanges, setAnthroRanges] = useState<AnthroRange[]>([]);
+  const [avaliadores, setAvaliadores] = useState<Avaliador[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Busca todos os registros de uma tabela ignorando o limite padrão de 1000 linhas do PostgREST
@@ -208,14 +227,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setAssessments((a.data || []).map(mapAssessment));
       setActions((ac.data || []).map(mapAction));
 
-      const [b, t, ar] = await Promise.all([
+      const [b, t, ar, av] = await Promise.all([
         supabase.from("blocks").select("*"),
         supabase.from("templates").select("*"),
         supabase.from("anthro_ranges").select("*"),
+        supabase.from("avaliadores").select("*"),
       ]);
       setBlocks((b.data || []).map(mapBlock));
       setTemplates((t.data || []).map(mapTemplate));
       setAnthroRanges((ar.data || []).map(mapAnthro));
+      setAvaliadores((av.data || []).map(mapAvaliador));
     } catch (e) {
       console.error("loadData error:", e);
     }
@@ -249,7 +270,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (!supabaseUser) {
       setUser(null);
       setCompanies([]); setSectors([]); setPositions([]); setSurveys([]);
-      setAssessments([]); setActions([]); setBlocks([]); setTemplates([]); setAnthroRanges([]);
+      setAssessments([]); setActions([]); setBlocks([]); setTemplates([]); setAnthroRanges([]); setAvaliadores([]);
       return;
     }
     // Set user first (even without profile) so UI unblocks
@@ -328,7 +349,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   // ── Companies ──
   const addCompany = async (c: Omit<Company, "id">) => {
-    const { data, error } = await supabase.from("companies").insert({ name: c.name, cnpj: c.cnpj, city: c.city, user_id: user?.id }).select().single();
+    const { data, error } = await supabase.from("companies").insert({
+      name: c.name, nome_fantasia: c.name, cnpj: c.cnpj, city: c.city,
+      razao_social: c.razaoSocial, endereco: c.endereco, cnae_principal: c.cnaePrincipal,
+      telefone: c.telefone, email: c.email, logo_url: c.logoUrl, conclusao_aet: c.conclusaoAet,
+      user_id: user?.id,
+    }).select().single();
     if (error || !data) { console.error("addCompany error:", error); throw new Error(error?.message || "Erro ao criar empresa"); }
     const company = mapCompany(data);
     setCompanies((prev) => [...prev, company]);
@@ -336,7 +362,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const updateCompany = async (id: string, d: Partial<Company>) => {
-    await supabase.from("companies").update({ name: d.name, cnpj: d.cnpj, city: d.city }).eq("id", id);
+    await supabase.from("companies").update({
+      ...(d.name !== undefined && { name: d.name, nome_fantasia: d.name }),
+      ...(d.cnpj !== undefined && { cnpj: d.cnpj }),
+      ...(d.city !== undefined && { city: d.city }),
+      ...(d.razaoSocial !== undefined && { razao_social: d.razaoSocial }),
+      ...(d.endereco !== undefined && { endereco: d.endereco }),
+      ...(d.cnaePrincipal !== undefined && { cnae_principal: d.cnaePrincipal }),
+      ...(d.telefone !== undefined && { telefone: d.telefone }),
+      ...(d.email !== undefined && { email: d.email }),
+      ...(d.logoUrl !== undefined && { logo_url: d.logoUrl }),
+      ...(d.conclusaoAet !== undefined && { conclusao_aet: d.conclusaoAet }),
+    }).eq("id", id);
     setCompanies((prev) => prev.map((c) => (c.id === id ? { ...c, ...d } : c)));
   };
 
@@ -371,16 +408,49 @@ export function DataProvider({ children }: { children: ReactNode }) {
       (pos) => pos.sectorId === p.sectorId && pos.name.trim().toLowerCase() === p.name.trim().toLowerCase()
     );
     if (duplicate) throw new Error(`Já existe um cargo com o nome "${p.name}" neste setor.`);
-    const { data, error } = await supabase.from("positions").insert({ sector_id: p.sectorId, company_id: p.companyId, name: p.name }).select().single();
+    const { data, error } = await supabase.from("positions").insert({ sector_id: p.sectorId, company_id: p.companyId, name: p.name, descricao: p.descricao || null }).select().single();
     if (error || !data) { console.error("addPosition error:", error); throw new Error(error?.message || "Erro ao criar cargo"); }
     const pos = mapPosition(data);
     setPositions((prev) => [...prev, pos]);
     return pos;
   };
 
+  const updatePosition = async (id: string, data: Partial<Omit<Position, "id">>) => {
+    const update: any = {};
+    if (data.name !== undefined) update.name = data.name;
+    if (data.descricao !== undefined) update.descricao = data.descricao;
+    const { error } = await supabase.from("positions").update(update).eq("id", id);
+    if (error) console.error("updatePosition error:", error);
+    setPositions((prev) => prev.map((p) => (p.id === id ? { ...p, ...data } : p)));
+  };
+
   const deletePosition = async (id: string) => {
     await supabase.from("positions").delete().eq("id", id);
     setPositions((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  // ── Avaliadores ──
+  const addAvaliador = async (a: Omit<Avaliador, "id">) => {
+    const { data, error } = await supabase.from("avaliadores").insert({ user_id: user?.id, nome: a.nome, cpf: a.cpf, formacao: a.formacao, registro_profissional: a.registroProfissional }).select().single();
+    if (error || !data) { console.error("addAvaliador error:", error); throw new Error(error?.message || "Erro ao criar avaliador"); }
+    const av = mapAvaliador(data);
+    setAvaliadores((prev) => [...prev, av]);
+    return av;
+  };
+
+  const updateAvaliador = async (id: string, d: Partial<Avaliador>) => {
+    const update: any = {};
+    if (d.nome !== undefined) update.nome = d.nome;
+    if (d.cpf !== undefined) update.cpf = d.cpf;
+    if (d.formacao !== undefined) update.formacao = d.formacao;
+    if (d.registroProfissional !== undefined) update.registro_profissional = d.registroProfissional;
+    await supabase.from("avaliadores").update(update).eq("id", id);
+    setAvaliadores((prev) => prev.map((a) => (a.id === id ? { ...a, ...d } : a)));
+  };
+
+  const deleteAvaliador = async (id: string) => {
+    await supabase.from("avaliadores").delete().eq("id", id);
+    setAvaliadores((prev) => prev.filter((a) => a.id !== id));
   };
 
   // ── Surveys ──
@@ -546,10 +616,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
   return (
     <DataContext.Provider
       value={{
-        user, companies, sectors, positions, surveys, assessments, actions, blocks, templates, anthroRanges, loading,
+        user, companies, sectors, positions, surveys, assessments, actions, blocks, templates, anthroRanges, avaliadores, loading,
         login, register, logout,
         getFullAssessment, getFullAssessmentsForCompany, getFullSurvey, getFullSurveysForCompany,
-        addCompany, updateCompany, deleteCompany, addSector, deleteSector, addPosition, deletePosition,
+        addCompany, updateCompany, deleteCompany, addSector, deleteSector, addPosition, updatePosition, deletePosition,
+        addAvaliador, updateAvaliador, deleteAvaliador,
         addSurvey, updateSurvey, deleteSurvey, addAssessment, updateAssessment, deleteAssessment, addAction, updateAction, deleteAction,
         addBlock, updateBlock, deleteBlock, addTemplate, updateTemplate, deleteTemplate,
         addAnthroRange, updateAnthroRange, deleteAnthroRange, refreshData,
