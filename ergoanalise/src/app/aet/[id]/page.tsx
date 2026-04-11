@@ -374,53 +374,78 @@ function printAet(data: PrintData) {
     }
     assessHtml += `</div>`;
 
-    /* 6d: Anthropometric data (workers in this GSE) */
+    /* 6d: Anthropometric data (workers in this GSE) — same layout as anthro report */
     let anthroHtml = `<div style="margin-bottom:20px;"><h4 style="font-size:12px;font-weight:bold;color:#065f46;margin-bottom:10px;">Dados Antropométricos dos Trabalhadores</h4>`;
     if (gseSurveys.length === 0) {
       anthroHtml += `<p style="font-size:11px;color:#94a3b8;padding:10px;background:#f8fafc;border-radius:6px;">Nenhum questionário registrado para os cargos deste GSE.</p>`;
     } else {
-      // Group by position name
+      // Group by position name (preserving insertion order)
       const byPosition = new Map<string, typeof gseSurveys>();
       for (const sv of gseSurveys) {
-        const pos = sv.position || "—";
-        if (!byPosition.has(pos)) byPosition.set(pos, []);
-        byPosition.get(pos)!.push(sv);
+        const posKey = sv.position || "—";
+        if (!byPosition.has(posKey)) byPosition.set(posKey, []);
+        byPosition.get(posKey)!.push(sv);
       }
       for (const [posName, workers] of byPosition.entries()) {
         anthroHtml += `
-        <div style="margin-bottom:12px;">
-          <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:6px;padding:4px 8px;background:#f1f5f9;border-radius:4px;">${posName}</p>
-          <table style="width:100%;border-collapse:collapse;">
-            <thead>
-              <tr style="background:#f8fafc;">
-                <th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:left;font-size:10px;font-weight:600;color:#475569;">Trabalhador</th>
-                <th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:left;font-size:10px;font-weight:600;color:#475569;">Setor</th>
-                <th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:center;font-size:10px;font-weight:600;color:#475569;">Sexo</th>
-                <th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:center;font-size:10px;font-weight:600;color:#475569;">Altura (cm)</th>
-                <th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:center;font-size:10px;font-weight:600;color:#475569;">Peso (kg)</th>
-                <th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:left;font-size:10px;font-weight:600;color:#475569;">Faixa Antropométrica</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${workers.map((sv, idx) => {
-                const range = anthroRanges.find((r) => sv.height >= r.minHeight && sv.height <= r.maxHeight);
-                const rowBg = idx % 2 === 0 ? "#ffffff" : "#f8fafc";
-                return `<tr style="background:${rowBg};">
-                  <td style="padding:5px 8px;border:1px solid #e2e8f0;font-size:10px;font-weight:600;color:#1e293b;">${sv.workerName}</td>
-                  <td style="padding:5px 8px;border:1px solid #e2e8f0;font-size:10px;color:#475569;">${sv.sector || "—"}</td>
-                  <td style="padding:5px 8px;border:1px solid #e2e8f0;font-size:10px;color:#475569;text-align:center;">${sv.sex || "—"}</td>
-                  <td style="padding:5px 8px;border:1px solid #e2e8f0;font-size:11px;font-weight:700;color:#0ea5e9;text-align:center;">${sv.height || "—"}</td>
-                  <td style="padding:5px 8px;border:1px solid #e2e8f0;font-size:11px;font-weight:700;color:#10b981;text-align:center;">${(sv as any).weight || "—"}</td>
-                  <td style="padding:5px 8px;border:1px solid #e2e8f0;font-size:10px;">
+        <div style="margin-bottom:16px;">
+          <!-- Position header — like anthro report -->
+          <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:6px;padding:8px 12px;margin-bottom:10px;">
+            <p style="font-size:11px;font-weight:700;color:#065f46;text-transform:uppercase;letter-spacing:.06em;margin:0;">Cargo: ${posName}</p>
+          </div>
+          <!-- Workers: 2-col card per worker (data | image) -->
+          ${workers.map((sv) => {
+            const range = anthroRanges.find((r) => sv.height >= r.minHeight && sv.height <= r.maxHeight);
+            return `
+            <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:10px;page-break-inside:avoid;align-items:start;">
+              <!-- Left: worker data -->
+              <div style="padding:4px 0;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                  <div style="width:30px;height:30px;border-radius:50%;background:#d1fae5;display:flex;align-items:center;justify-content:center;shrink:0;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  </div>
+                  <p style="font-size:13px;font-weight:700;color:#1e293b;margin:0;line-height:1.3;">${sv.workerName}</p>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px;font-size:11px;">
+                  <div>
+                    <p style="font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin:0 0 1px;">Altura</p>
+                    <p style="font-size:18px;font-weight:700;color:#1e293b;margin:0;">${sv.height} cm</p>
+                  </div>
+                  ${(sv as any).weight ? `<div>
+                    <p style="font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin:0 0 1px;">Peso</p>
+                    <p style="font-size:13px;font-weight:600;color:#475569;margin:0;">${(sv as any).weight} kg</p>
+                  </div>` : ""}
+                  <div>
+                    <p style="font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin:0 0 1px;">Setor</p>
+                    <p style="font-size:11px;color:#475569;margin:0;">${sv.sector || "—"}</p>
+                  </div>
+                  <div>
+                    <p style="font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin:0 0 1px;">Cargo</p>
+                    <p style="font-size:11px;color:#475569;margin:0;">${sv.position || "—"}</p>
+                  </div>
+                  <div style="margin-top:4px;">
                     ${range
-                      ? `<span style="display:inline-block;background:#d1fae5;color:#065f46;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:600;">${range.name} (${range.minHeight}–${range.maxHeight} cm)</span>`
-                      : `<span style="display:inline-block;background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 6px;font-size:9px;">Fora das faixas cadastradas</span>`
+                      ? `<div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:6px;padding:6px 10px;">
+                          <p style="font-size:10px;font-weight:600;color:#059669;margin:0;">Faixa: ${range.minHeight}–${range.maxHeight} cm${range.name ? ` (${range.name})` : ""}</p>
+                        </div>`
+                      : `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 10px;">
+                          <p style="font-size:10px;color:#92400e;margin:0;">Sem faixa correspondente</p>
+                        </div>`
                     }
-                  </td>
-                </tr>`;
-              }).join("")}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+              </div>
+              <!-- Right: range image -->
+              <div style="display:flex;justify-content:center;align-items:flex-start;">
+                ${range?.image
+                  ? `<img src="${range.image}" alt="${range.name || "Faixa"}" style="width:100%;max-height:320px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;background:#fff;" />`
+                  : `<div style="width:100%;height:220px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                    </div>`
+                }
+              </div>
+            </div>`;
+          }).join("")}
         </div>`;
       }
     }
