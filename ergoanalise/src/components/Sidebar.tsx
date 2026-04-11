@@ -131,11 +131,7 @@ export default function Sidebar() {
           {standaloneLinks.map(renderLink)}
 
           {/* Separador */}
-          {!collapsed && (
-            <div className="pt-2 pb-1">
-              <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-500">Cadastros</p>
-            </div>
-          )}
+          {!collapsed && <div className="pt-1" />}
           {collapsed && <div className="border-t border-slate-700 my-2" />}
 
           {/* Grupo Cadastros */}
