@@ -6,16 +6,23 @@ import { useData } from "@/contexts/DataContext";
 import {
   FiHome, FiClipboard, FiActivity, FiFileText, FiLogOut, FiUser,
   FiGrid, FiList, FiMenu, FiX, FiBarChart2, FiChevronLeft, FiChevronRight, FiUsers,
+  FiChevronDown, FiChevronUp, FiFolder,
 } from "react-icons/fi";
 
-const links = [
+const standaloneLinks = [
   { href: "/dashboard", label: "Dashboard", icon: FiBarChart2 },
+  { href: "/assessments", label: "Avaliações", icon: FiClipboard },
+];
+
+const cadastroLinks = [
   { href: "/companies", label: "Empresas", icon: FiHome },
   { href: "/avaliadores", label: "Avaliadores", icon: FiUsers },
   { href: "/blocks", label: "Blocos", icon: FiGrid },
   { href: "/checklist-templates", label: "Checklists", icon: FiList },
-  { href: "/assessments", label: "Avaliações", icon: FiClipboard },
   { href: "/anthropometry", label: "Antropometria", icon: FiActivity },
+];
+
+const bottomLinks = [
   { href: "/reports", label: "Relatórios", icon: FiFileText },
 ];
 
@@ -24,6 +31,11 @@ export default function Sidebar() {
   const { user, logout } = useData();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const isCadastroActive = cadastroLinks.some(
+    (l) => pathname === l.href || pathname.startsWith(l.href)
+  );
+  const [cadastroOpen, setCadastroOpen] = useState(isCadastroActive);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -41,9 +53,35 @@ export default function Sidebar() {
     setMobileOpen(false);
   }, [pathname]);
 
+  // Auto-open cadastros group when navigating to a cadastro page
+  useEffect(() => {
+    if (isCadastroActive) setCadastroOpen(true);
+  }, [isCadastroActive]);
+
   if (!user) return null;
 
   const sidebarWidth = collapsed ? "w-16" : "w-64";
+
+  const renderLink = (l: { href: string; label: string; icon: React.ElementType }) => {
+    const active = pathname === l.href || (l.href !== "/dashboard" && pathname.startsWith(l.href));
+    return (
+      <Link
+        key={l.href}
+        href={l.href}
+        title={collapsed ? l.label : undefined}
+        className={`flex items-center gap-3 rounded-lg text-sm transition-colors ${
+          collapsed ? "px-0 py-2.5 justify-center" : "px-3 py-2.5"
+        } ${
+          active
+            ? "bg-emerald-600 text-white"
+            : "text-slate-300 hover:bg-slate-800 hover:text-white"
+        }`}
+      >
+        <l.icon size={18} className="shrink-0" />
+        {!collapsed && <span>{l.label}</span>}
+      </Link>
+    );
+  };
 
   return (
     <>
@@ -89,26 +127,65 @@ export default function Sidebar() {
 
         {/* Nav */}
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
-          {links.map((l) => {
-            const active = pathname === l.href || (l.href !== "/dashboard" && pathname.startsWith(l.href));
-            return (
-              <Link
-                key={l.href}
-                href={l.href}
-                title={collapsed ? l.label : undefined}
-                className={`flex items-center gap-3 rounded-lg text-sm transition-colors ${
-                  collapsed ? "px-0 py-2.5 justify-center" : "px-3 py-2.5"
-                } ${
-                  active
-                    ? "bg-emerald-600 text-white"
+          {/* Links standalone do topo */}
+          {standaloneLinks.map(renderLink)}
+
+          {/* Separador */}
+          {!collapsed && (
+            <div className="pt-2 pb-1">
+              <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-500">Cadastros</p>
+            </div>
+          )}
+          {collapsed && <div className="border-t border-slate-700 my-2" />}
+
+          {/* Grupo Cadastros */}
+          {collapsed ? (
+            // No modo colapsado, mostra os ícones diretamente sem agrupamento
+            cadastroLinks.map(renderLink)
+          ) : (
+            <div>
+              <button
+                onClick={() => setCadastroOpen((o) => !o)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                  isCadastroActive && !cadastroOpen
+                    ? "bg-emerald-600/20 text-emerald-400"
                     : "text-slate-300 hover:bg-slate-800 hover:text-white"
                 }`}
               >
-                <l.icon size={18} className="shrink-0" />
-                {!collapsed && <span>{l.label}</span>}
-              </Link>
-            );
-          })}
+                <FiFolder size={18} className="shrink-0" />
+                <span className="flex-1 text-left">Cadastros</span>
+                {cadastroOpen ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
+              </button>
+
+              {cadastroOpen && (
+                <div className="ml-4 mt-0.5 space-y-0.5 border-l border-slate-700 pl-2">
+                  {cadastroLinks.map((l) => {
+                    const active = pathname === l.href || pathname.startsWith(l.href);
+                    return (
+                      <Link
+                        key={l.href}
+                        href={l.href}
+                        className={`flex items-center gap-3 rounded-lg text-sm transition-colors px-3 py-2 ${
+                          active
+                            ? "bg-emerald-600 text-white"
+                            : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                        }`}
+                      >
+                        <l.icon size={16} className="shrink-0" />
+                        <span>{l.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Separador */}
+          {!collapsed && <div className="border-t border-slate-700 my-2" />}
+
+          {/* Links do rodapé */}
+          {bottomLinks.map(renderLink)}
         </nav>
 
         {/* User + Toggle */}
@@ -143,7 +220,7 @@ export default function Sidebar() {
             </div>
           )}
 
-          {/* Botão de expandir/recolher — seta dentro de círculo, na parte de baixo */}
+          {/* Botão de expandir/recolher */}
           <div className={`flex ${collapsed ? "justify-center" : "justify-end"}`}>
             <button
               onClick={() => { setCollapsed(!collapsed); setMobileOpen(false); }}
