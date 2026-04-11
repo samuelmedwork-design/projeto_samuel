@@ -1,7 +1,7 @@
 "use client";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useData, ActionPlanQuestion, GSE_RISKS, Assessment } from "@/contexts/DataContext";
+import { useData, ActionPlanQuestion, GSE_RISKS, Assessment, AnthroRange } from "@/contexts/DataContext";
 import { useToast } from "@/components/Toast";
 import { supabase } from "@/lib/supabase";
 import GseManager from "@/components/GseManager";
@@ -115,12 +115,13 @@ interface PrintData {
   positions: ReturnType<typeof useData>["positions"];
   sectors: ReturnType<typeof useData>["sectors"];
   documentTemplates: ReturnType<typeof useData>["documentTemplates"];
+  anthroRanges: AnthroRange[];
   aet: { conclusaoGeral: string };
   responses: AetActionResponse[];
 }
 
 function printAet(data: PrintData) {
-  const { company, avaliadores, companyGses, surveys, fullAssessments, positions, sectors, documentTemplates, aet, responses } = data;
+  const { company, avaliadores, companyGses, surveys, fullAssessments, positions, sectors, documentTemplates, anthroRanges, aet, responses } = data;
 
   const cover = documentTemplates.find((t) => t.type === "cover")?.content || "";
   const bodyInitial = documentTemplates.find((t) => t.type === "body_initial")?.content || "";
@@ -373,7 +374,59 @@ function printAet(data: PrintData) {
     }
     assessHtml += `</div>`;
 
-    /* 6d: GSE conclusion */
+    /* 6d: Anthropometric data (workers in this GSE) */
+    let anthroHtml = `<div style="margin-bottom:20px;"><h4 style="font-size:12px;font-weight:bold;color:#065f46;margin-bottom:10px;">Dados Antropométricos dos Trabalhadores</h4>`;
+    if (gseSurveys.length === 0) {
+      anthroHtml += `<p style="font-size:11px;color:#94a3b8;padding:10px;background:#f8fafc;border-radius:6px;">Nenhum questionário registrado para os cargos deste GSE.</p>`;
+    } else {
+      // Group by position name
+      const byPosition = new Map<string, typeof gseSurveys>();
+      for (const sv of gseSurveys) {
+        const pos = sv.position || "—";
+        if (!byPosition.has(pos)) byPosition.set(pos, []);
+        byPosition.get(pos)!.push(sv);
+      }
+      for (const [posName, workers] of byPosition.entries()) {
+        anthroHtml += `
+        <div style="margin-bottom:12px;">
+          <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:6px;padding:4px 8px;background:#f1f5f9;border-radius:4px;">${posName}</p>
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:#f8fafc;">
+                <th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:left;font-size:10px;font-weight:600;color:#475569;">Trabalhador</th>
+                <th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:left;font-size:10px;font-weight:600;color:#475569;">Setor</th>
+                <th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:center;font-size:10px;font-weight:600;color:#475569;">Sexo</th>
+                <th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:center;font-size:10px;font-weight:600;color:#475569;">Altura (cm)</th>
+                <th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:center;font-size:10px;font-weight:600;color:#475569;">Peso (kg)</th>
+                <th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:left;font-size:10px;font-weight:600;color:#475569;">Faixa Antropométrica</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${workers.map((sv, idx) => {
+                const range = anthroRanges.find((r) => sv.height >= r.minHeight && sv.height <= r.maxHeight);
+                const rowBg = idx % 2 === 0 ? "#ffffff" : "#f8fafc";
+                return `<tr style="background:${rowBg};">
+                  <td style="padding:5px 8px;border:1px solid #e2e8f0;font-size:10px;font-weight:600;color:#1e293b;">${sv.workerName}</td>
+                  <td style="padding:5px 8px;border:1px solid #e2e8f0;font-size:10px;color:#475569;">${sv.sector || "—"}</td>
+                  <td style="padding:5px 8px;border:1px solid #e2e8f0;font-size:10px;color:#475569;text-align:center;">${sv.sex || "—"}</td>
+                  <td style="padding:5px 8px;border:1px solid #e2e8f0;font-size:11px;font-weight:700;color:#0ea5e9;text-align:center;">${sv.height || "—"}</td>
+                  <td style="padding:5px 8px;border:1px solid #e2e8f0;font-size:11px;font-weight:700;color:#10b981;text-align:center;">${(sv as any).weight || "—"}</td>
+                  <td style="padding:5px 8px;border:1px solid #e2e8f0;font-size:10px;">
+                    ${range
+                      ? `<span style="display:inline-block;background:#d1fae5;color:#065f46;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:600;">${range.name} (${range.minHeight}–${range.maxHeight} cm)</span>`
+                      : `<span style="display:inline-block;background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 6px;font-size:9px;">Fora das faixas cadastradas</span>`
+                    }
+                  </td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>`;
+      }
+    }
+    anthroHtml += `</div>`;
+
+    /* 6e: GSE conclusion */
     const conclusaoHtml = `
     <div style="padding:12px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;">
       <p style="font-size:11px;font-weight:bold;color:#065f46;margin-bottom:6px;">Conclusão do GSE</p>
@@ -390,6 +443,7 @@ function printAet(data: PrintData) {
         ${risksHtml}
         ${painHtml}
         ${assessHtml}
+        ${anthroHtml}
         ${conclusaoHtml}
       </div>
     </div>`;
@@ -434,11 +488,17 @@ function printAet(data: PrintData) {
   .page-break { page-break-before:always; }
   .section { padding:0 0 28px; }
   .cover { text-align:center; padding:80px 40px; min-height:90vh; display:flex; flex-direction:column; justify-content:center; }
+  @page {
+    size: A4;
+    margin: 18mm 22mm;
+  }
   @media print {
-    body { margin:12mm 18mm; }
-    .cover { page-break-after:always; min-height:unset; }
-    .no-print { display:none; }
-    h2 { margin-top:4px; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    body { margin: 0; }
+    .cover { page-break-after: always; min-height: unset; }
+    .no-print { display: none; }
+    h2 { margin-top: 4px; }
+    .page-break { page-break-before: always; }
   }
 </style>
 </head>
@@ -547,9 +607,9 @@ ${bodyInitial ? `<div class="page-break section"><h2>3. Introdução</h2><div st
 <div class="page-break section">
   <h2>9. Plano de Ação</h2>
   <h3 style="margin-top:8px;margin-bottom:8px;">9.1 Plano de Ação Geral</h3>
-  ${actionNao.length === 0 ? `<p style="color:#94a3b8;font-style:italic;">Nenhuma ação identificada no plano geral.</p>` : `
+  ${actionNao.length === 0 ? `<p style="color:#94a3b8;font-style:italic;">Nenhum item com "Não possui" identificado no plano geral.</p>` : `
   <table>
-    <tr><th style="width:5%;">#</th><th>Ação Necessária</th><th style="width:15%;">Prioridade</th></tr>
+    <tr><th style="width:5%;">#</th><th>Item — "Não Possui"</th><th style="width:15%;">Prioridade</th></tr>
     ${actionNao.map((r, i) => `<tr>
       <td style="padding:6px 8px;border:1px solid #ddd;text-align:center;">${i + 1}</td>
       <td style="padding:6px 8px;border:1px solid #ddd;">${r.questionText}</td>
@@ -656,6 +716,7 @@ function PlanoAcaoStep({ aetId, companyId }: { aetId: string; companyId: string 
     };
     return `px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${colors[val]}`;
   };
+  const RESP_LABELS: Record<string, string> = { sim: "Possui", nao: "Não possui", nao_se_aplica: "Não se aplica" };
 
   const getGseNcItems = (gse: typeof companyGses[0]) => {
     const items: { id: string; questionText: string; recommendation: string; blockName: string; positionName: string }[] = [];
@@ -698,17 +759,22 @@ function PlanoAcaoStep({ aetId, companyId }: { aetId: string; companyId: string 
         ) : (
           <div className="space-y-2">
             {responses.map((r) => (
-              <div key={r.id} className={`bg-white border rounded-lg p-4 ${r.resposta === "nao" ? "border-red-200 bg-red-50" : "border-slate-200"}`}>
+              <div key={r.id} className={`bg-white border rounded-lg p-4 transition-colors ${r.resposta === "nao" ? "border-red-200 bg-red-50" : r.resposta === "sim" ? "border-emerald-200 bg-emerald-50" : "border-slate-200"}`}>
                 <div className="flex items-start gap-3">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <p className="text-sm text-slate-800">{r.questionText}</p>
                       <span className={`text-xs px-1.5 py-0.5 rounded shrink-0 ${priorityColor(r.priority)}`}>{priorityLabel(r.priority)}</span>
+                      {r.resposta === "nao" && (
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700 shrink-0 font-medium">→ Plano de Ação</span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 mt-2">
-                      <button onClick={() => setResposta(r.id, "sim")} className={respostaBtnCls(r.resposta, "sim")}>Sim</button>
-                      <button onClick={() => setResposta(r.id, "nao")} className={respostaBtnCls(r.resposta, "nao")}>Não</button>
-                      <button onClick={() => setResposta(r.id, "nao_se_aplica")} className={respostaBtnCls(r.resposta, "nao_se_aplica")}>N/A</button>
+                      {(["sim", "nao", "nao_se_aplica"] as const).map((val) => (
+                        <button key={val} onClick={() => setResposta(r.id, val)} className={respostaBtnCls(r.resposta, val)}>
+                          {RESP_LABELS[val]}
+                        </button>
+                      ))}
                     </div>
                   </div>
                   {r.isCustom && (
@@ -768,7 +834,7 @@ export default function AetPipelinePage() {
   const router = useRouter();
   const { toast } = useToast();
   const {
-    companies, avaliadores, gses, surveys, positions, sectors, documentTemplates,
+    companies, avaliadores, gses, surveys, positions, sectors, documentTemplates, anthroRanges,
     aets, updateAet,
   } = useData();
 
@@ -824,7 +890,7 @@ export default function AetPipelinePage() {
         id: r.id, questionText: r.question_text, priority: r.priority,
         resposta: r.resposta || null, isCustom: r.is_custom || false, ordem: r.ordem || 0,
       }));
-      printAet({ company, avaliadores, companyGses, surveys, fullAssessments, positions, sectors, documentTemplates, aet: { conclusaoGeral: conclusao }, responses });
+      printAet({ company, avaliadores, companyGses, surveys, fullAssessments, positions, sectors, documentTemplates, anthroRanges, aet: { conclusaoGeral: conclusao }, responses });
     } finally {
       setPrinting(false);
     }
