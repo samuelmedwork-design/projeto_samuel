@@ -179,7 +179,7 @@ interface DataContextType {
   // GSE
   gses: Gse[];
   addGse: (companyId: string) => Promise<Gse>;
-  updateGse: (id: string, data: { conclusao?: string }) => Promise<void>;
+  updateGse: (id: string, data: { conclusao?: string; excludedActionIds?: string[] }) => Promise<void>;
   deleteGse: (id: string) => Promise<void>;
   addGsePosition: (gseId: string, positionId: string) => Promise<void>;
   removeGsePosition: (gseId: string, positionId: string) => Promise<void>;
@@ -808,7 +808,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   return (
     <DataContext.Provider
       value={{
-        user, companies, sectors, positions, surveys, assessments, actions, blocks, templates, anthroRanges, avaliadores, gses, loading,
+        user, companies, sectors, positions, surveys, assessments, actions, blocks, templates, anthroRanges, avaliadores, loading,
         login, register, logout,
         getFullAssessment, getFullAssessmentsForCompany, getFullSurvey, getFullSurveysForCompany,
         addCompany, updateCompany, deleteCompany, addSector, deleteSector, addPosition, updatePosition, deletePosition,
