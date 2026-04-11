@@ -276,18 +276,12 @@ export default function SurveyPage() {
     };
 
     try {
-      // Tenta com todos os campos (incluindo sex/weight)
-      let { error } = await supabase.from("surveys").insert(surveyData);
-      if (error) {
-        // Se falhar (colunas sex/weight podem não existir), tenta sem elas
-        const { sex: _s, weight: _w, ...fallbackData } = surveyData;
-        const retry = await supabase.from("surveys").insert(fallbackData);
-        if (retry.error) throw retry.error;
-      }
+      const { error } = await supabase.from("surveys").insert(surveyData);
+      if (error) throw error;
       setSubmitted(true);
-    } catch (err) {
-      // Verifica se é realmente offline ou erro de rede
+    } catch (err: any) {
       if (!navigator.onLine) {
+        // Salva localmente quando offline
         try {
           const db = await new Promise<IDBDatabase>((resolve, reject) => {
             const req = indexedDB.open("ergoanalise_offline", 1);
@@ -301,17 +295,16 @@ export default function SurveyPage() {
             req.onerror = () => reject(req.error);
           });
           const tx = db.transaction("pending_surveys", "readwrite");
-          tx.objectStore("pending_surveys").add({
-            data: surveyData,
-            timestamp: new Date().toISOString(),
-          });
+          tx.objectStore("pending_surveys").add({ data: surveyData, timestamp: new Date().toISOString() });
           setSubmitted(true);
           setSubmitError("offline");
         } catch {
-          setSubmitError("Erro ao salvar offline. Tente novamente.");
+          setSubmitError("Sem conexão e não foi possível salvar offline. Tente novamente.");
         }
       } else {
-        setSubmitError("Erro ao enviar. Tente novamente.");
+        // Mostra mensagem de erro real sem mascarar
+        const msg = err?.message || err?.code || "Erro desconhecido";
+        setSubmitError(`Erro ao enviar. Tente novamente. (${msg})`);
       }
     }
   };
@@ -814,8 +807,14 @@ export default function SurveyPage() {
                 </button>
               </div>
 
-              <div className="flex gap-3 mt-6">
-                <button onClick={() => setStep(3)}
+              {submitError && submitError !== "offline" && (
+                <div className="mt-4 bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
+                  {submitError}
+                </div>
+              )}
+
+              <div className="flex gap-3 mt-4">
+                <button onClick={() => { setSubmitError(""); setStep(3); }}
                   className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors">
                   Voltar
                 </button>

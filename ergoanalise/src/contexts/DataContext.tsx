@@ -54,6 +54,57 @@ export interface AnthroRange { id: string; name: string; minHeight: number; maxH
 
 export interface AppUser { id: string; email: string; name: string; role: string; }
 
+export interface Gse {
+  id: string;
+  companyId: string;
+  numero: number;
+  conclusao: string;
+  positionIds: string[];   // derivado de gse_positions
+  assessmentIds: string[]; // derivado de gse_assessments
+  risks: string[];         // derivado de gse_risks
+  excludedActionIds: string[]; // IDs de itens do plano específico removidos manualmente
+}
+
+export interface ActionChecklistItem {
+  id: string;
+  companyId: string;
+  item: string;
+  resposta: "sim" | "nao" | "nao_se_aplica" | null;
+  ordem: number;
+}
+
+// Lista oficial de riscos ergonômicos do GSE (imutável)
+export const GSE_RISKS = [
+  "Cadência do trabalho imposta por um equipamento",
+  "Compressão de partes do corpo por superfícies rígidas ou com quinas",
+  "Desequilíbrio entre tempo de trabalho e tempo de repouso",
+  "Exigência de elevação frequente de membros superiores",
+  "Exigência de flexões de coluna vertebral frequentes",
+  "Exigência de uso frequente de força, pressão, preensão, flexão, extensão ou torção dos segmentos corporais",
+  "Frequente ação de puxar/empurrar cargas ou volumes",
+  "Frequente deslocamento a pé durante a jornada de trabalho",
+  "Frequente execução de movimentos repetitivos",
+  "Insuficiência de capacitação para execução da tarefa",
+  "Levantamento e transporte manual de cargas ou volumes",
+  "Manuseio de ferramentas e/ou objetos pesados por longos períodos",
+  "Manuseio ou movimentação de cargas e volumes sem pega ou com \"pega pobre\"",
+  "Monotonia",
+  "Necessidade de manter ritmos intensos de trabalho",
+  "Postura de pé por longos períodos",
+  "Postura sentada por longos períodos",
+  "Trabalho com esforço físico intenso",
+  "Trabalho com necessidade de variação de turnos",
+  "Trabalho com utilização rigorosa de metas de produção",
+  "Trabalho em posturas incômodas ou pouco confortáveis por longos períodos",
+  "Trabalho intensivo com teclado ou outros dispositivos de entrada de dados",
+  "Trabalho noturno",
+  "Trabalho realizado sem pausas pré-definidas para descanso",
+  "Trabalho remunerado por produção",
+  "Uso frequente de alavancas",
+  "Uso frequente de escadas",
+  "Uso frequente de pedais",
+] as const;
+
 // ─── Constants ───────────────────────────────────────────────────────
 export const BODY_REGIONS_NO_LATERAL = ["Olhos", "Cabeça", "Pescoço", "Trapézio", "Tórax", "Lombar", "Nádegas"];
 export const BODY_REGIONS_WITH_LATERAL = ["Ombros", "Braços", "Cotovelos", "Antebraços", "Punhos", "Mãos e Dedos", "Coxas", "Joelhos", "Panturrilhas", "Tornozelos", "Pés e Dedos"];
@@ -125,6 +176,22 @@ interface DataContextType {
   addAnthroRange: (r: Omit<AnthroRange, "id">) => Promise<AnthroRange>;
   updateAnthroRange: (id: string, data: Partial<AnthroRange>) => Promise<void>;
   deleteAnthroRange: (id: string) => Promise<void>;
+  // GSE
+  gses: Gse[];
+  addGse: (companyId: string) => Promise<Gse>;
+  updateGse: (id: string, data: { conclusao?: string }) => Promise<void>;
+  deleteGse: (id: string) => Promise<void>;
+  addGsePosition: (gseId: string, positionId: string) => Promise<void>;
+  removeGsePosition: (gseId: string, positionId: string) => Promise<void>;
+  addGseRisk: (gseId: string, risco: string) => Promise<void>;
+  removeGseRisk: (gseId: string, risco: string) => Promise<void>;
+  addGseAssessment: (gseId: string, assessmentId: string) => Promise<void>;
+  removeGseAssessment: (gseId: string, assessmentId: string) => Promise<void>;
+  // Action Checklist (Plano Geral)
+  actionChecklist: ActionChecklistItem[];
+  addActionChecklistItem: (companyId: string, item: string) => Promise<void>;
+  updateActionChecklistItem: (id: string, d: Partial<Pick<ActionChecklistItem, "resposta" | "item">>) => Promise<void>;
+  deleteActionChecklistItem: (id: string) => Promise<void>;
   refreshData: () => Promise<void>;
 }
 
@@ -175,6 +242,13 @@ function mapBlock(r: any): ChecklistBlock { return { id: r.id, name: r.name, ima
 function mapTemplate(r: any): ChecklistTemplate { return { id: r.id, name: r.name, blockIds: r.block_ids || [] }; }
 function mapAnthro(r: any): AnthroRange { return { id: r.id, name: r.name, minHeight: r.min_height, maxHeight: r.max_height, image: r.image }; }
 
+function buildGse(row: any, positions: string[], assessments: string[], risks: string[]): Gse {
+  return { id: row.id, companyId: row.company_id, numero: row.numero, conclusao: row.conclusao || '', positionIds: positions, assessmentIds: assessments, risks, excludedActionIds: row.excluded_action_ids || [] };
+}
+function mapActionChecklist(r: any): ActionChecklistItem {
+  return { id: r.id, companyId: r.company_id, item: r.item, resposta: r.resposta || null, ordem: r.ordem || 0 };
+}
+
 // ─── Provider ────────────────────────────────────────────────────────
 export function DataProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
@@ -188,6 +262,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [templates, setTemplates] = useState<ChecklistTemplate[]>([]);
   const [anthroRanges, setAnthroRanges] = useState<AnthroRange[]>([]);
   const [avaliadores, setAvaliadores] = useState<Avaliador[]>([]);
+  const [gses, setGses] = useState<Gse[]>([]);
+  const [actionChecklist, setActionChecklist] = useState<ActionChecklistItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Busca todos os registros de uma tabela ignorando o limite padrão de 1000 linhas do PostgREST
@@ -237,6 +313,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setTemplates((t.data || []).map(mapTemplate));
       setAnthroRanges((ar.data || []).map(mapAnthro));
       setAvaliadores((av.data || []).map(mapAvaliador));
+
+      // Load action checklist items
+      const { data: acData } = await supabase.from("action_checklist_items").select("*").order("ordem");
+      setActionChecklist((acData || []).map(mapActionChecklist));
+
+      // Load GSEs with related data
+      const [gseRows, gsePos, gseRisk, gseAss] = await Promise.all([
+        supabase.from("gse").select("*").order("numero"),
+        supabase.from("gse_positions").select("*"),
+        supabase.from("gse_risks").select("*"),
+        supabase.from("gse_assessments").select("*"),
+      ]);
+      const gsePosData = gsePos.data || [];
+      const gseRiskData = gseRisk.data || [];
+      const gseAssData = gseAss.data || [];
+      setGses((gseRows.data || []).map((row: any) =>
+        buildGse(
+          row,
+          gsePosData.filter((p: any) => p.gse_id === row.id).map((p: any) => p.position_id),
+          gseAssData.filter((a: any) => a.gse_id === row.id).map((a: any) => a.assessment_id),
+          gseRiskData.filter((r: any) => r.gse_id === row.id).map((r: any) => r.risco),
+        )
+      ));
     } catch (e) {
       console.error("loadData error:", e);
     }
@@ -270,7 +369,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (!supabaseUser) {
       setUser(null);
       setCompanies([]); setSectors([]); setPositions([]); setSurveys([]);
-      setAssessments([]); setActions([]); setBlocks([]); setTemplates([]); setAnthroRanges([]); setAvaliadores([]);
+      setAssessments([]); setActions([]); setBlocks([]); setTemplates([]); setAnthroRanges([]); setAvaliadores([]); setGses([]); setActionChecklist([]);
       return;
     }
     // Set user first (even without profile) so UI unblocks
@@ -611,19 +710,115 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setAnthroRanges((prev) => prev.filter((r) => r.id !== id));
   };
 
+  // ── GSE ──
+  const addGse = async (companyId: string): Promise<Gse> => {
+    const companyGses = gses.filter((g) => g.companyId === companyId);
+    const nextNumero = companyGses.length > 0 ? Math.max(...companyGses.map((g) => g.numero)) + 1 : 1;
+    const { data, error } = await supabase.from("gse").insert({ company_id: companyId, numero: nextNumero, user_id: user?.id }).select().single();
+    if (error || !data) throw new Error(error?.message || "Erro ao criar GSE");
+    const gse = buildGse(data, [], [], []);
+    setGses((prev) => [...prev, gse]);
+    return gse;
+  };
+
+  const updateGse = async (id: string, d: { conclusao?: string; excludedActionIds?: string[] }) => {
+    const update: any = {};
+    if (d.conclusao !== undefined) update.conclusao = d.conclusao;
+    if (d.excludedActionIds !== undefined) update.excluded_action_ids = d.excludedActionIds;
+    const { error } = await supabase.from("gse").update(update).eq("id", id);
+    if (error) console.error("updateGse error:", error);
+    setGses((prev) => prev.map((g) => (g.id === id ? { ...g, ...d } : g)));
+  };
+
+  const deleteGse = async (id: string) => {
+    await supabase.from("gse").delete().eq("id", id);
+    // Re-numerar os restantes da mesma empresa
+    const gse = gses.find((g) => g.id === id);
+    if (gse) {
+      const remaining = gses.filter((g) => g.companyId === gse.companyId && g.id !== id).sort((a, b) => a.numero - b.numero);
+      for (let i = 0; i < remaining.length; i++) {
+        if (remaining[i].numero !== i + 1) {
+          await supabase.from("gse").update({ numero: i + 1 }).eq("id", remaining[i].id);
+        }
+      }
+      setGses((prev) => {
+        const rest = prev.filter((g) => g.companyId === gse.companyId && g.id !== id).sort((a, b) => a.numero - b.numero);
+        const renumbered = rest.map((g, i) => ({ ...g, numero: i + 1 }));
+        return [...prev.filter((g) => g.companyId !== gse.companyId), ...renumbered];
+      });
+    }
+  };
+
+  const addGsePosition = async (gseId: string, positionId: string) => {
+    const { error } = await supabase.from("gse_positions").insert({ gse_id: gseId, position_id: positionId });
+    if (error) throw new Error(error.message);
+    setGses((prev) => prev.map((g) => g.id === gseId ? { ...g, positionIds: [...g.positionIds, positionId] } : g));
+  };
+
+  const removeGsePosition = async (gseId: string, positionId: string) => {
+    await supabase.from("gse_positions").delete().eq("gse_id", gseId).eq("position_id", positionId);
+    setGses((prev) => prev.map((g) => g.id === gseId ? { ...g, positionIds: g.positionIds.filter((p) => p !== positionId) } : g));
+  };
+
+  const addGseRisk = async (gseId: string, risco: string) => {
+    const { error } = await supabase.from("gse_risks").insert({ gse_id: gseId, risco });
+    if (error) throw new Error(error.message);
+    setGses((prev) => prev.map((g) => g.id === gseId ? { ...g, risks: [...g.risks, risco] } : g));
+  };
+
+  const removeGseRisk = async (gseId: string, risco: string) => {
+    await supabase.from("gse_risks").delete().eq("gse_id", gseId).eq("risco", risco);
+    setGses((prev) => prev.map((g) => g.id === gseId ? { ...g, risks: g.risks.filter((r) => r !== risco) } : g));
+  };
+
+  const addGseAssessment = async (gseId: string, assessmentId: string) => {
+    const { error } = await supabase.from("gse_assessments").insert({ gse_id: gseId, assessment_id: assessmentId });
+    if (error) throw new Error(error.message);
+    setGses((prev) => prev.map((g) => g.id === gseId ? { ...g, assessmentIds: [...g.assessmentIds, assessmentId] } : g));
+  };
+
+  const removeGseAssessment = async (gseId: string, assessmentId: string) => {
+    await supabase.from("gse_assessments").delete().eq("gse_id", gseId).eq("assessment_id", assessmentId);
+    setGses((prev) => prev.map((g) => g.id === gseId ? { ...g, assessmentIds: g.assessmentIds.filter((a) => a !== assessmentId) } : g));
+  };
+
+  // ── Action Checklist (Plano Geral) ──
+  const addActionChecklistItem = async (companyId: string, item: string) => {
+    const maxOrdem = actionChecklist.filter((a) => a.companyId === companyId).reduce((m, a) => Math.max(m, a.ordem), 0);
+    const { data, error } = await supabase.from("action_checklist_items").insert({ company_id: companyId, item, ordem: maxOrdem + 1, user_id: user?.id }).select().single();
+    if (error || !data) throw new Error(error?.message || "Erro ao criar item");
+    setActionChecklist((prev) => [...prev, mapActionChecklist(data)]);
+  };
+
+  const updateActionChecklistItem = async (id: string, d: Partial<Pick<ActionChecklistItem, "resposta" | "item">>) => {
+    const update: any = {};
+    if (d.resposta !== undefined) update.resposta = d.resposta;
+    if (d.item !== undefined) update.item = d.item;
+    await supabase.from("action_checklist_items").update(update).eq("id", id);
+    setActionChecklist((prev) => prev.map((a) => (a.id === id ? { ...a, ...d } : a)));
+  };
+
+  const deleteActionChecklistItem = async (id: string) => {
+    await supabase.from("action_checklist_items").delete().eq("id", id);
+    setActionChecklist((prev) => prev.filter((a) => a.id !== id));
+  };
+
   const refreshData = loadData;
 
   return (
     <DataContext.Provider
       value={{
-        user, companies, sectors, positions, surveys, assessments, actions, blocks, templates, anthroRanges, avaliadores, loading,
+        user, companies, sectors, positions, surveys, assessments, actions, blocks, templates, anthroRanges, avaliadores, gses, loading,
         login, register, logout,
         getFullAssessment, getFullAssessmentsForCompany, getFullSurvey, getFullSurveysForCompany,
         addCompany, updateCompany, deleteCompany, addSector, deleteSector, addPosition, updatePosition, deletePosition,
         addAvaliador, updateAvaliador, deleteAvaliador,
         addSurvey, updateSurvey, deleteSurvey, addAssessment, updateAssessment, deleteAssessment, addAction, updateAction, deleteAction,
         addBlock, updateBlock, deleteBlock, addTemplate, updateTemplate, deleteTemplate,
-        addAnthroRange, updateAnthroRange, deleteAnthroRange, refreshData,
+        addAnthroRange, updateAnthroRange, deleteAnthroRange,
+        gses, addGse, updateGse, deleteGse, addGsePosition, removeGsePosition, addGseRisk, removeGseRisk, addGseAssessment, removeGseAssessment,
+        actionChecklist, addActionChecklistItem, updateActionChecklistItem, deleteActionChecklistItem,
+        refreshData,
       }}
     >
       {children}

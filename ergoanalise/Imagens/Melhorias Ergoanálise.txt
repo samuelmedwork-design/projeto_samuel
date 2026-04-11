@@ -1,0 +1,83 @@
+🔧 MELHORIAS — DASHBOARD E VISUALIZAÇÃO
+
+Na aba Dashboard, atualmente ao clicar em uma empresa é exibido o status de preenchimento por setor. Deve ser implementada uma melhoria onde, ao clicar em um setor, seja aberta automaticamente a listagem dos cargos pertencentes a esse setor, exibindo também o status de preenchimento de cada cargo individualmente. Isso permitirá um nível maior de controle e acompanhamento da evolução dos dados.
+
+🏢 CADASTRO DE EMPRESA — MELHORIAS
+
+No cadastro de cargos dentro da empresa, deve ser incluído um novo campo obrigatório de “descrição da função”. Essa descrição será utilizada posteriormente na montagem do documento final da AET, portanto deve ser um campo de texto livre.
+
+Além disso, deve ser incluído no cadastro da empresa um campo de “Conclusão geral da AET”, que será preenchido ao final do processo pelo avaliador e utilizado na geração do documento final.
+
+🧠 MÓDULO DE GSE (GRUPOS SIMILARES DE EXPOSIÇÃO)
+
+Deve ser criado dentro da empresa um novo módulo para gerenciamento de GSE.
+
+Deve existir um botão “Adicionar GSE”, e cada novo GSE criado deve receber automaticamente uma numeração sequencial (01, 02, 03, etc).
+
+Ao acessar um GSE, o sistema deve permitir selecionar os cargos que farão parte dele. Esses cargos devem ser exibidos organizados por setor. Uma regra importante: um cargo só pode pertencer a um único GSE, portanto, após ser vinculado a um GSE, ele não deve mais aparecer como opção para os demais.
+
+Dentro de cada GSE, deve existir uma seleção de riscos ergonômicos aplicáveis, com base em uma lista pré-definida, exatamente conforme abaixo (não deve ser alterada, removida ou adaptada):
+
+Cadência do trabalho imposta por um equipamento
+Compressão de partes do corpo por superfícies rígidas ou com quinas
+Desequilíbrio entre tempo de trabalho e tempo de repouso
+Exigência de elevação frequente de membros superiores
+Exigência de flexões de coluna vertebral frequentes
+Exigência de uso frequente de força, pressão, preensão, flexão, extensão ou torção dos segmentos corporais
+Frequente ação de puxar/empurrar cargas ou volumes
+Frequente deslocamento a pé durante a jornada de trabalho
+Frequente execução de movimentos repetitivos
+Insuficiência de capacitação para execução da tarefa
+Levantamento e transporte manual de cargas ou volumes
+Manuseio de ferramentas e/ou objetos pesados por longos períodos
+Manuseio ou movimentação de cargas e volumes sem pega ou com “pega pobre”
+Monotonia
+Necessidade de manter ritmos intensos de trabalho
+Postura de pé por longos períodos
+Postura sentada por longos períodos
+Trabalho com esforço físico intenso
+Trabalho com necessidade de variação de turnos
+Trabalho com utilização rigorosa de metas de produção
+Trabalho em posturas incômodas ou pouco confortáveis por longos períodos
+Trabalho intensivo com teclado ou outros dispositivos de entrada de dados
+Trabalho noturno
+Trabalho realizado sem pausas pré-definidas para descanso
+Trabalho remunerado por produção
+Uso frequente de alavancas
+Uso frequente de escadas
+Uso frequente de pedais
+
+Após selecionar os cargos do GSE, deve ser possível vincular avaliações já realizadas. O sistema deve listar apenas avaliações que estejam associadas a cargos pertencentes àquele GSE. Uma mesma avaliação pode aparecer em mais de um GSE, desde que esteja vinculada a cargos daquele grupo.
+
+Cada GSE deve possuir um campo de texto livre para “Conclusão do avaliador”, onde será registrada a análise ergonômica daquele grupo.
+
+📄 MÓDULO DE DOCUMENTAÇÃO (GERAÇÃO DO RELATÓRIO COMPLETO)
+
+Deve ser criada uma nova aba chamada “Documentação”, responsável por montar automaticamente o documento completo da AET.
+
+A estrutura do documento deve seguir exatamente esta ordem:
+
+Capa
+Dados da empresa e dos avaliadores
+Corpo inicial (introdução padrão)
+Tabela de GSE contendo: número do GSE, setores e cargos, e descrição das funções
+Dados gerais dos setores (gráficos de sexo, altura média e peso médio)
+Variáveis por GSE, contendo:
+Riscos ergonômicos evidenciados
+Queixas de dores dos trabalhadores daquele GSE
+Avaliações realizadas (checklists)
+Conclusão do GSE
+Conclusão geral da AET
+Corpo final e encerramento
+Plano de ação
+📋 PLANO DE AÇÃO (GERAL E ESPECÍFICO)
+
+O sistema deve possuir dois tipos de plano de ação: plano geral da empresa e plano específico por GSE.
+
+O plano específico deve ser gerado automaticamente com base nas não conformidades identificadas nos checklists realizados em campo. Deve haver a opção de remover manualmente itens desse plano.
+
+O plano geral deve ser baseado em um checklist próprio dentro do cadastro da empresa, com respostas “Sim”, “Não” ou “Não se aplica”. Sempre que uma resposta for “Não”, deve ser gerado automaticamente um item no plano de ação geral.
+
+🎯 OBJETIVO DESSAS MELHORIAS
+
+Essas melhorias têm como objetivo permitir a evolução do sistema para uma plataforma completa de elaboração de AET, com organização por GSE, consolidação automática de dados e geração de documento técnico final estruturado e pronto para entrega.

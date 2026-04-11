@@ -1,0 +1,630 @@
+{
+  "exportDate": "2026-03-30T20:49:02.908Z",
+  "version": "1.0",
+  "supabaseProject": "gbciphzoqjhgsnuqdwjr",
+  "data": {
+    "companies": [
+      {
+        "id": "165203df-e984-4f8c-b39c-82368d59f0cc",
+        "user_id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "name": "Medwork palmas",
+        "cnpj": "24.763.267/0001-07",
+        "city": "Palmas - TO",
+        "created_at": "2026-03-30T20:45:12.801573+00:00"
+      }
+    ],
+    "sectors": [
+      {
+        "id": "f26e13ff-4961-4c3f-9072-3b319d0db90c",
+        "company_id": "165203df-e984-4f8c-b39c-82368d59f0cc",
+        "name": "SESMT"
+      }
+    ],
+    "positions": [
+      {
+        "id": "53ee894e-1f2f-4349-9f52-379ff74d090c",
+        "sector_id": "f26e13ff-4961-4c3f-9072-3b319d0db90c",
+        "company_id": "165203df-e984-4f8c-b39c-82368d59f0cc",
+        "name": "Técnico em segurança do trabalho"
+      }
+    ],
+    "surveys": [],
+    "assessments": [],
+    "actions": [],
+    "blocks": [
+      {
+        "id": "3b92f18f-0583-4460-b4bb-dfc80d18564b",
+        "user_id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "name": "Monitor",
+        "image": null,
+        "questions": [
+          {
+            "id": "dd077dd8-5a4d-4116-b67f-2c5a2af00664",
+            "text": "Monitor posicionado na altura dos olhos",
+            "type": "marcacao",
+            "order": 0,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          },
+          {
+            "id": "e8736c81-343e-45f4-b694-38ff1213538b",
+            "text": "Presença de filtro antirreflexo",
+            "type": "marcacao",
+            "order": 1,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          },
+          {
+            "id": "09c2e748-aff4-42c5-ae71-322bb59d11f9",
+            "text": "Monitor posicionado no eixo visual do trabalhador",
+            "type": "marcacao",
+            "order": 2,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          },
+          {
+            "id": "706d4828-30e1-460d-aa05-d21008c431a4",
+            "text": "Ângulo de visão adequado (15° a 20°)",
+            "type": "marcacao",
+            "order": 3,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          },
+          {
+            "id": "c8a88c59-208e-4af2-abb9-206c19e8179f",
+            "text": "Monitor posicionado frontalmente ao usuário",
+            "type": "marcacao",
+            "order": 4,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          },
+          {
+            "id": "fd33e17d-58e6-4e6f-bd52-4b30f5d1b982",
+            "text": "Distância adequada entre olhos e tela (50 a 75 cm)",
+            "type": "marcacao",
+            "order": 5,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "e1314294-424f-4abf-a2e0-31b64ab43311",
+        "user_id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "name": "Mesa / Superfície de Trabalho",
+        "image": null,
+        "questions": [
+          {
+            "id": "0bdabca6-9c74-4b99-a58d-0d190254608d",
+            "text": "Altura da mesa",
+            "type": "numerico",
+            "unit": "cm",
+            "order": 0
+          },
+          {
+            "id": "ca92c494-c2ec-4110-8e09-26bef421c6ce",
+            "text": "Profundidade da mesa",
+            "type": "numerico",
+            "unit": "cm",
+            "order": 1
+          },
+          {
+            "id": "26ab7229-2c27-4e52-a8f7-4fb4ee13c518",
+            "text": "Largura da mesa",
+            "type": "numerico",
+            "unit": "cm",
+            "order": 2
+          },
+          {
+            "id": "c2dee335-969c-4c0e-b5b5-c30c4c603e0c",
+            "text": "Espaço livre para pernas sob a mesa",
+            "type": "marcacao",
+            "order": 3,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          },
+          {
+            "id": "40e79fcf-6263-486e-b622-b710f864bcaa",
+            "text": "Bordas arredondadas",
+            "type": "marcacao",
+            "order": 4,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          },
+          {
+            "id": "e2e67f8f-1b2b-4964-be5b-2b279904088a",
+            "text": "Superfície fosca (sem reflexos)",
+            "type": "marcacao",
+            "order": 5,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "6557fb57-e714-4129-9a0a-f3467f3984d4",
+        "user_id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "name": "Assento",
+        "image": null,
+        "questions": [
+          {
+            "id": "00575022-9daa-419b-ad98-d4a7d54a40b6",
+            "text": "Altura do assento regulável",
+            "type": "marcacao",
+            "order": 0,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          },
+          {
+            "id": "2f1c6607-d833-4e4f-994f-cc88d0bbb187",
+            "text": "Apoio lombar presente e ajustável",
+            "type": "marcacao",
+            "order": 1,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          },
+          {
+            "id": "de784e37-84fc-45cd-8be0-f5b18569b4c9",
+            "text": "Apoio de braços regulável",
+            "type": "marcacao",
+            "order": 2,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          },
+          {
+            "id": "fa4d191b-0fc1-4e9f-9403-627a63a17e1f",
+            "text": "Profundidade do assento adequada ao biótipo",
+            "type": "marcacao",
+            "order": 3,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          },
+          {
+            "id": "e4fb2e7e-533a-4b0f-8e23-c06e0654dedc",
+            "text": "Base com 5 patas e rodízios",
+            "type": "marcacao",
+            "order": 4,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          },
+          {
+            "id": "b6d01a83-0cf5-445b-84e3-e0fe6b741c37",
+            "text": "Estofamento em bom estado",
+            "type": "marcacao",
+            "order": 5,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          },
+          {
+            "id": "eff2a881-dd3c-4419-8558-07bd084ac1db",
+            "text": "Apoio para os pés disponível quando necessário",
+            "type": "marcacao",
+            "order": 6,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "2f3c8c42-282f-42b0-88a3-3a432e7b6964",
+        "user_id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "name": "Teclado e Mouse",
+        "image": null,
+        "questions": [
+          {
+            "id": "d1439178-c158-474c-92db-21f5927416fd",
+            "text": "Teclado independente do monitor",
+            "type": "marcacao",
+            "order": 0,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          },
+          {
+            "id": "77c294a4-09ca-43d5-a0bc-c5596bea3575",
+            "text": "Mouse independente do teclado",
+            "type": "marcacao",
+            "order": 1,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          },
+          {
+            "id": "bfbedaf2-2505-439a-973b-367a5e168afe",
+            "text": "Alinhamento dos dispositivos com o eixo do corpo",
+            "type": "marcacao",
+            "order": 2,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          },
+          {
+            "id": "69c9cd84-df97-4b47-aa52-2b818a8f4449",
+            "text": "Apoio para punhos durante digitação",
+            "type": "marcacao",
+            "order": 3,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          },
+          {
+            "id": "d80ee39b-ed02-47dc-9a21-a15ba1c07662",
+            "text": "Postura de punhos neutra durante uso",
+            "type": "marcacao",
+            "order": 4,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          },
+          {
+            "id": "1ca73e1d-4bcb-4e76-ad1b-454ff1e20ce5",
+            "text": "Ombros relaxados durante digitação",
+            "type": "marcacao",
+            "order": 5,
+            "options": [
+              {
+                "label": "Atende"
+              },
+              {
+                "label": "Não atende"
+              },
+              {
+                "label": "Não se aplica"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "0a787227-b396-4fc0-b40b-7712af05bee2",
+        "user_id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "name": "Avaliação Ambiental",
+        "image": null,
+        "questions": [
+          {
+            "id": "b56e55ae-7d33-4019-b528-d43a5591989d",
+            "text": "Ruído",
+            "type": "numerico",
+            "unit": "dB",
+            "order": 0
+          },
+          {
+            "id": "c25a4b03-2fab-4b9e-ac17-199f8016f2de",
+            "text": "Iluminação",
+            "type": "numerico",
+            "unit": "lux",
+            "order": 1
+          },
+          {
+            "id": "8ecead51-570a-4e71-b8e8-ced4988e81c6",
+            "text": "Umidade relativa",
+            "type": "numerico",
+            "unit": "%",
+            "order": 2
+          },
+          {
+            "id": "0f5619c6-d3ae-4f63-844b-ac7c1f184b54",
+            "text": "Velocidade do ar",
+            "type": "numerico",
+            "unit": "m/s",
+            "order": 3
+          },
+          {
+            "id": "1ff09a29-1a13-416b-976c-826f36f161d9",
+            "text": "Temperatura",
+            "type": "numerico",
+            "unit": "°C",
+            "order": 4
+          }
+        ]
+      }
+    ],
+    "templates": [],
+    "anthro_ranges": [
+      {
+        "id": "7571fa8b-218a-472b-a4fe-36403075005c",
+        "user_id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "name": "130 - 135 cm",
+        "min_height": 130,
+        "max_height": 135,
+        "image": null
+      },
+      {
+        "id": "ddf5c4bd-a3af-44a2-9f17-c2c8ad799c40",
+        "user_id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "name": "135 - 140 cm",
+        "min_height": 135,
+        "max_height": 140,
+        "image": null
+      },
+      {
+        "id": "390958d8-7246-4458-b802-45b930e64eab",
+        "user_id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "name": "140 - 145 cm",
+        "min_height": 140,
+        "max_height": 145,
+        "image": null
+      },
+      {
+        "id": "3b8263c9-72cf-4e49-913c-d69cd6d7dddc",
+        "user_id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "name": "145 - 150 cm",
+        "min_height": 145,
+        "max_height": 150,
+        "image": null
+      },
+      {
+        "id": "6cc92735-60c7-41c0-9d75-3ff024ede694",
+        "user_id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "name": "150 - 155 cm",
+        "min_height": 150,
+        "max_height": 155,
+        "image": null
+      },
+      {
+        "id": "6dea0822-8bd1-43f7-8801-e8a520552cbc",
+        "user_id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "name": "155 - 160 cm",
+        "min_height": 155,
+        "max_height": 160,
+        "image": null
+      },
+      {
+        "id": "e4fed899-83a1-44bc-91b7-bf86ba395947",
+        "user_id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "name": "160 - 165 cm",
+        "min_height": 160,
+        "max_height": 165,
+        "image": null
+      },
+      {
+        "id": "e9b6f288-c209-4cc6-bad8-e59a4b81a3de",
+        "user_id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "name": "165 - 170 cm",
+        "min_height": 165,
+        "max_height": 170,
+        "image": null
+      },
+      {
+        "id": "9c9f8e60-456a-4a94-9a1d-a0d3a69886be",
+        "user_id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "name": "170 - 175 cm",
+        "min_height": 170,
+        "max_height": 175,
+        "image": null
+      },
+      {
+        "id": "30547f6a-8c69-427b-bb06-874e260cfb7a",
+        "user_id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "name": "175 - 180 cm",
+        "min_height": 175,
+        "max_height": 180,
+        "image": null
+      },
+      {
+        "id": "157ed1bc-38f7-4280-a9ec-6d674f4f5dcf",
+        "user_id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "name": "180 - 185 cm",
+        "min_height": 180,
+        "max_height": 185,
+        "image": null
+      },
+      {
+        "id": "ef5a451d-0b0b-4443-a110-f8b35972767f",
+        "user_id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "name": "185 - 190 cm",
+        "min_height": 185,
+        "max_height": 190,
+        "image": null
+      },
+      {
+        "id": "300bcf2c-b459-45b9-ae52-4ce3eab90f90",
+        "user_id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "name": "190 - 195 cm",
+        "min_height": 190,
+        "max_height": 195,
+        "image": null
+      },
+      {
+        "id": "e2dfe443-110e-4c5f-9263-bc342a62025c",
+        "user_id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "name": "195 - 200 cm",
+        "min_height": 195,
+        "max_height": 200,
+        "image": null
+      }
+    ],
+    "profiles": [
+      {
+        "id": "35c891fd-580d-4af7-86a3-2baa55b08556",
+        "full_name": "Samuel Rodrigues",
+        "role": "consultor",
+        "created_at": "2026-03-30T20:37:52.082661+00:00"
+      }
+    ]
+  }
+}

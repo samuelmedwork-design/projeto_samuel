@@ -2,7 +2,7 @@
 import { useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
-import { FiPlus, FiCopy, FiCheck, FiLink, FiLayers, FiUpload, FiFileText, FiEdit2, FiUsers, FiClipboard, FiTrash2 } from "react-icons/fi";
+import { FiPlus, FiCopy, FiCheck, FiLink, FiLayers, FiUpload, FiFileText, FiEdit2, FiUsers, FiClipboard, FiTrash2, FiGrid, FiAlertCircle, FiBookOpen } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import * as XLSX from "xlsx";
 import { useToast } from "@/components/Toast";
@@ -22,6 +22,17 @@ export default function StructurePage() {
 
   // Edição de cargo (descrição)
   const [editingPos, setEditingPos] = useState<{ id: string; name: string; descricao: string } | null>(null);
+
+  // Conclusão Geral da AET
+  const [conclusaoText, setConclusaoText] = useState(company?.conclusaoAet || "");
+  const [savingConclusao, setSavingConclusao] = useState(false);
+
+  const saveConclusao = async () => {
+    setSavingConclusao(true);
+    await updateCompany(id, { conclusaoAet: conclusaoText.trim() });
+    setSavingConclusao(false);
+    toast("Conclusão salva!");
+  };
 
   // Edição de dados da empresa
   const [editingCompany, setEditingCompany] = useState(false);
@@ -197,6 +208,21 @@ export default function StructurePage() {
           <p className="text-slate-500 text-sm mt-1">{company.cnpj} - {company.city}</p>
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={() => router.push(`/companies/${id}/documentacao`)}
+            className="flex items-center gap-2 px-3 py-2 text-sm bg-purple-50 border border-purple-200 rounded-lg text-purple-700 hover:bg-purple-100 transition-colors font-medium">
+            <FiBookOpen size={14} />
+            Documentação
+          </button>
+          <button onClick={() => router.push(`/companies/${id}/plano-acao`)}
+            className="flex items-center gap-2 px-3 py-2 text-sm bg-red-50 border border-red-200 rounded-lg text-red-700 hover:bg-red-100 transition-colors font-medium">
+            <FiAlertCircle size={14} />
+            Plano de Ação
+          </button>
+          <button onClick={() => router.push(`/companies/${id}/gse`)}
+            className="flex items-center gap-2 px-3 py-2 text-sm bg-amber-50 border border-amber-200 rounded-lg text-amber-700 hover:bg-amber-100 transition-colors font-medium">
+            <FiGrid size={14} />
+            GSE
+          </button>
           <button onClick={() => router.push(`/companies/${id}/surveys`)}
             className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-50 border border-blue-200 rounded-lg text-blue-700 hover:bg-blue-100 transition-colors font-medium">
             <FiClipboard size={14} />
@@ -423,6 +449,30 @@ export default function StructurePage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Conclusão Geral da AET */}
+      <div className="mt-10 bg-white border border-slate-200 rounded-xl p-6">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-800">Conclusão Geral da AET</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Texto de encerramento que será utilizado no documento final</p>
+          </div>
+          <button
+            onClick={saveConclusao}
+            disabled={savingConclusao}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium disabled:opacity-50"
+          >
+            {savingConclusao ? "Salvando..." : "Salvar"}
+          </button>
+        </div>
+        <textarea
+          value={conclusaoText}
+          onChange={(e) => setConclusaoText(e.target.value)}
+          placeholder="Escreva aqui a conclusão geral da Análise Ergonômica do Trabalho..."
+          rows={6}
+          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none resize-none text-sm text-slate-700"
+        />
       </div>
 
       {/* Modal edição de descrição do cargo */}
