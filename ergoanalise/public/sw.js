@@ -1,13 +1,18 @@
-const CACHE_NAME = "ergoanalise-survey-v1";
-const SURVEY_ASSETS = [
+const CACHE_NAME = "ergoanalise-v2";
+const STATIC_ASSETS = [
+  "/",
+  "/dashboard",
+  "/manifest.json",
   "/logo-horizontal.png",
   "/logo-vertical.png",
+  "/icons/icon-192.jpg",
+  "/icons/icon-512.jpg",
 ];
 
-// Install: pre-cache survey assets
+// Install: pre-cache assets
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(SURVEY_ASSETS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
   self.skipWaiting();
 });
@@ -22,22 +27,36 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Fetch: serve from cache if offline, cache survey pages
+// Fetch strategy
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
   // Only handle GET requests
   if (event.request.method !== "GET") return;
 
-  // Cache-first for static assets
-  if (SURVEY_ASSETS.some((a) => url.pathname === a)) {
+  // Bypass Supabase API calls — always network
+  if (url.hostname.includes("supabase")) return;
+
+  // Cache-first for static assets (images, fonts, icons)
+  if (
+    url.pathname.match(/\.(png|jpg|jpeg|svg|ico|webp|woff2?|ttf)$/) ||
+    STATIC_ASSETS.includes(url.pathname)
+  ) {
     event.respondWith(
-      caches.match(event.request).then((cached) => cached || fetch(event.request))
+      caches.match(event.request).then(
+        (cached) => cached || fetch(event.request).then((res) => {
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return res;
+        })
+      )
     );
     return;
   }
 
-  // Network-first for survey pages, fallback to cache
+  // Network-first for survey pages (offline support)
   if (url.pathname.startsWith("/survey/")) {
     event.respondWith(
       fetch(event.request)
@@ -50,9 +69,23 @@ self.addEventListener("fetch", (event) => {
     );
     return;
   }
+
+  // Network-first for Next.js chunks — fallback to cache when offline
+  if (url.pathname.startsWith("/_next/")) {
+    event.respondWith(
+      fetch(event.request).then((res) => {
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return res;
+      }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
 });
 
-// Handle offline survey submissions
+// Handle messages (sync surveys)
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SYNC_SURVEYS") {
     syncPendingSurveys();
@@ -80,7 +113,7 @@ async function syncPendingSurveys() {
             delTx.objectStore("pending_surveys").delete(survey.id);
           }
         } catch {
-          // Still offline, will retry later
+          // Still offline
         }
       }
     };
