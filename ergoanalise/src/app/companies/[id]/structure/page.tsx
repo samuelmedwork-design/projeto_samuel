@@ -134,7 +134,7 @@ export default function StructurePage() {
         dataRows = dataRows.filter((row) => row[0] && row[1] && String(row[0]).trim() && String(row[1]).trim());
 
         if (dataRows.length === 0) {
-          setImportError("Planilha vazia ou formato inválido. Use: Coluna A = Setor, Coluna B = Cargo.");
+          setImportError("Planilha vazia ou formato inválido. Use: Coluna A = Setor, Coluna B = Cargo, Coluna C = Descrição (opcional).");
           setImporting(false);
           return;
         }
@@ -151,6 +151,7 @@ export default function StructurePage() {
         for (const row of dataRows) {
           const sectorNameRaw = String(row[0]).trim();
           const positionNameRaw = String(row[1]).trim();
+          const descricaoRaw = row[2] ? String(row[2]).trim().slice(0, 500) : undefined;
           if (!sectorNameRaw || !positionNameRaw) continue;
 
           const sectorKey = sectorNameRaw.toLowerCase();
@@ -166,7 +167,7 @@ export default function StructurePage() {
 
           // Cria cargo (ignora duplicatas no mesmo setor)
           try {
-            await addPosition({ companyId: id, sectorId, name: positionNameRaw });
+            await addPosition({ companyId: id, sectorId, name: positionNameRaw, descricao: descricaoRaw });
             newPositionsCount++;
           } catch {
             // Cargo duplicado no setor — ignora e continua
@@ -275,7 +276,7 @@ export default function StructurePage() {
           <h3 className="font-semibold text-blue-800 text-sm">Importar Setores e Cargos via Planilha</h3>
         </div>
         <p className="text-xs text-blue-600 mb-3">
-          Envie uma planilha Excel (.xlsx / .xls) com duas colunas: <strong>Coluna A = Setor</strong> e <strong>Coluna B = Cargo</strong>.
+          Envie uma planilha Excel (.xlsx / .xls) com três colunas: <strong>Coluna A = Setor</strong>, <strong>Coluna B = Cargo</strong> e <strong>Coluna C = Descrição da Função</strong> (opcional, máx. 500 caracteres).
           Setores repetidos serão criados apenas uma vez. Cargos com mesmo nome em setores distintos serão mantidos separados.
         </p>
 
@@ -300,12 +301,12 @@ export default function StructurePage() {
           <button
             onClick={() => {
               const ws = XLSX.utils.aoa_to_sheet([
-                ["Setor", "Cargo"],
-                ["Administrativo", "Auxiliar Administrativo"],
-                ["Administrativo", "Recepcionista"],
-                ["Operacional", "Operador de Máquinas"],
-                ["Operacional", "Auxiliar de Produção"],
-                ["TI", "Desenvolvedor"],
+                ["Setor", "Cargo", "Descrição da Função"],
+                ["Administrativo", "Auxiliar Administrativo", "Responsável por atividades de suporte administrativo, organização de documentos e atendimento interno."],
+                ["Administrativo", "Recepcionista", "Atendimento ao público, agendamentos e controle de entrada e saída de visitantes."],
+                ["Operacional", "Operador de Máquinas", "Operação e monitoramento de equipamentos industriais conforme procedimentos de segurança."],
+                ["Operacional", "Auxiliar de Produção", "Suporte às atividades de produção, organização de linha e controle de qualidade básico."],
+                ["TI", "Desenvolvedor", "Desenvolvimento e manutenção de sistemas e aplicações de software."],
               ]);
               const wb = XLSX.utils.book_new();
               XLSX.utils.book_append_sheet(wb, ws, "Setores e Cargos");
