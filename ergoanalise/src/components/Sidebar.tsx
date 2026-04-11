@@ -192,35 +192,40 @@ export default function Sidebar() {
                   <p className="text-xs text-slate-400 truncate">{user.email}</p>
                 </div>
               </div>
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-red-400 transition-colors w-full mb-3"
-              >
-                <FiLogOut size={16} />
-                Sair
-              </button>
+              <div className="flex items-center justify-between px-3">
+                <button
+                  onClick={logout}
+                  className="flex items-center gap-2 py-1.5 text-sm text-slate-400 hover:text-red-400 transition-colors"
+                >
+                  <FiLogOut size={14} />
+                  Sair
+                </button>
+                <button
+                  onClick={() => { setCollapsed(!collapsed); setMobileOpen(false); }}
+                  className="hidden md:flex w-6 h-6 rounded border border-slate-600 items-center justify-center text-slate-400 hover:text-white hover:border-slate-400 transition-colors"
+                  title="Recolher menu"
+                >
+                  <FiChevronLeft size={13} />
+                </button>
+              </div>
             </>
           ) : (
-            <div className="flex flex-col items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center">
-                <FiUser size={14} />
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center">
+                <FiUser size={13} />
               </div>
               <button onClick={logout} title="Sair" className="text-slate-400 hover:text-red-400 transition-colors">
-                <FiLogOut size={16} />
+                <FiLogOut size={14} />
+              </button>
+              <button
+                onClick={() => { setCollapsed(!collapsed); setMobileOpen(false); }}
+                className="hidden md:flex w-6 h-6 rounded border border-slate-600 items-center justify-center text-slate-400 hover:text-white hover:border-slate-400 transition-colors"
+                title="Expandir menu"
+              >
+                <FiChevronRight size={13} />
               </button>
             </div>
           )}
-
-          {/* Botão de expandir/recolher */}
-          <div className={`flex ${collapsed ? "justify-center" : "justify-end"}`}>
-            <button
-              onClick={() => { setCollapsed(!collapsed); setMobileOpen(false); }}
-              className="hidden md:flex w-8 h-8 rounded-full border border-slate-600 items-center justify-center text-slate-400 hover:text-white hover:border-slate-400 transition-colors"
-              title={collapsed ? "Expandir menu" : "Recolher menu"}
-            >
-              {collapsed ? <FiChevronRight size={16} /> : <FiChevronLeft size={16} />}
-            </button>
-          </div>
         </div>
       </aside>
     </>
