@@ -2,8 +2,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useData, ChecklistBlock, BlockQuestion } from "@/contexts/DataContext";
-import { FiPlus, FiImage, FiGrid, FiTrash2, FiSearch } from "react-icons/fi";
+import { FiPlus, FiImage, FiGrid, FiTrash2, FiSearch, FiChevronRight } from "react-icons/fi";
 import { v4 as uuidv4 } from "uuid";
+import ViewToggle, { ViewMode } from "@/components/ViewToggle";
 
 export default function BlocksPage() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function BlocksPage() {
   const [image, setImage] = useState<string | undefined>(undefined);
   const [nr17Success, setNr17Success] = useState(false);
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
   const filteredBlocks = blocks.filter((b) =>
     b.name.toLowerCase().includes(search.toLowerCase())
@@ -33,7 +35,6 @@ export default function BlocksPage() {
     if (!confirm("Deseja importar os 5 blocos pré-configurados da NR-17? Isso criará novos blocos na sua biblioteca.")) return;
 
     try {
-    // Bloco 1: Monitor
     await addBlock({
       name: "Monitor",
       questions: [
@@ -46,7 +47,6 @@ export default function BlocksPage() {
       ],
     });
 
-    // Bloco 2: Mesa / Superfície de Trabalho
     await addBlock({
       name: "Mesa / Superfície de Trabalho",
       questions: [
@@ -59,7 +59,6 @@ export default function BlocksPage() {
       ],
     });
 
-    // Bloco 3: Assento
     await addBlock({
       name: "Assento",
       questions: [
@@ -73,7 +72,6 @@ export default function BlocksPage() {
       ],
     });
 
-    // Bloco 4: Teclado e Mouse
     await addBlock({
       name: "Teclado e Mouse",
       questions: [
@@ -86,7 +84,6 @@ export default function BlocksPage() {
       ],
     });
 
-    // Bloco 5: Avaliação Ambiental
     await addBlock({
       name: "Avaliação Ambiental",
       questions: [
@@ -109,9 +106,7 @@ export default function BlocksPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setImage(reader.result as string);
-    };
+    reader.onloadend = () => setImage(reader.result as string);
     reader.readAsDataURL(file);
   };
 
@@ -149,13 +144,14 @@ export default function BlocksPage() {
             {blocks.length} {blocks.length === 1 ? "bloco cadastrado" : "blocos cadastrados"}
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex items-center gap-3">
+          <ViewToggle mode={viewMode} onChange={setViewMode} />
           <button
             onClick={handleImportNR17}
             className="flex items-center gap-2 bg-amber-500 text-white px-4 py-2.5 rounded-lg hover:bg-amber-600 transition-colors font-medium text-sm"
           >
             <FiGrid size={18} />
-            Importar Blocos NR-17
+            Importar NR-17
           </button>
           <button
             onClick={() => setShowModal(true)}
@@ -173,7 +169,6 @@ export default function BlocksPage() {
         </div>
       )}
 
-      {/* Busca */}
       {blocks.length > 0 && (
         <div className="relative mb-6">
           <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -198,7 +193,7 @@ export default function BlocksPage() {
           <FiSearch size={48} className="mx-auto mb-4 opacity-50" />
           <p>Nenhum bloco encontrado para &ldquo;{search}&rdquo;.</p>
         </div>
-      ) : (
+      ) : viewMode === "grid" ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
           {filteredBlocks.map((block) => (
             <div
@@ -208,11 +203,7 @@ export default function BlocksPage() {
             >
               <div className="h-24 bg-slate-100 flex items-center justify-center overflow-hidden">
                 {block.image ? (
-                  <img
-                    src={block.image}
-                    alt={block.name}
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={block.image} alt={block.name} className="w-full h-full object-cover" />
                 ) : (
                   <FiImage size={24} className="text-slate-300" />
                 )}
@@ -239,6 +230,57 @@ export default function BlocksPage() {
             </div>
           ))}
         </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50 text-left">
+                <th className="px-4 py-3 font-medium text-slate-600">Bloco</th>
+                <th className="px-4 py-3 font-medium text-slate-600 hidden sm:table-cell">Perguntas</th>
+                <th className="px-4 py-3 font-medium text-slate-600 text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredBlocks.map((block) => (
+                <tr
+                  key={block.id}
+                  onClick={() => router.push(`/blocks/${block.id}`)}
+                  className="border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer transition-colors group"
+                >
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                        {block.image ? (
+                          <img src={block.image} alt={block.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <FiImage size={14} className="text-slate-300" />
+                        )}
+                      </div>
+                      <span className="font-medium text-slate-800 group-hover:text-emerald-700 transition-colors">
+                        {block.name}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-slate-500 hidden sm:table-cell">
+                    {block.questions.length} {block.questions.length === 1 ? "pergunta" : "perguntas"}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={(e) => handleDelete(e, block.id)}
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                        title="Excluir"
+                      >
+                        <FiTrash2 size={14} />
+                      </button>
+                      <FiChevronRight size={16} className="text-slate-300 group-hover:text-emerald-500 transition-colors" />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {showModal && (
@@ -249,9 +291,7 @@ export default function BlocksPage() {
           >
             <h2 className="text-lg font-semibold text-slate-800">Novo Bloco</h2>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Nome do bloco
-              </label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Nome do bloco</label>
               <input
                 required
                 value={name}
@@ -261,9 +301,7 @@ export default function BlocksPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Imagem ilustrativa (opcional)
-              </label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Imagem ilustrativa (opcional)</label>
               <input
                 type="file"
                 accept="image/*"
@@ -277,17 +315,12 @@ export default function BlocksPage() {
               )}
             </div>
             <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={closeModal}
-                className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors"
-              >
+              <button type="button" onClick={closeModal}
+                className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors">
                 Cancelar
               </button>
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
-              >
+              <button type="submit"
+                className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium">
                 Criar
               </button>
             </div>

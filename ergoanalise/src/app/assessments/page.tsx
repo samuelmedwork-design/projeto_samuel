@@ -6,6 +6,7 @@ import {
   FiClipboard, FiPlus, FiEye, FiTrash2, FiSearch,
   FiArrowLeft, FiChevronRight, FiFilter
 } from "react-icons/fi";
+import ViewToggle, { ViewMode } from "@/components/ViewToggle";
 
 export default function AssessmentsPage() {
   const { templates, assessments, companies, sectors, positions, blocks, deleteAssessment } = useData();
@@ -13,6 +14,7 @@ export default function AssessmentsPage() {
 
   // Empresa selecionada para visualização
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [companyViewMode, setCompanyViewMode] = useState<ViewMode>("grid");
 
   // Filtros dentro da empresa
   const [filterTemplate, setFilterTemplate] = useState("");
@@ -114,13 +116,16 @@ export default function AssessmentsPage() {
               {assessments.length} avaliação(ões) realizada(s) · selecione uma empresa para visualizar
             </p>
           </div>
-          <button
-            onClick={openModal}
-            className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl hover:bg-emerald-700 transition-colors font-medium text-sm"
-          >
-            <FiPlus size={16} />
-            Nova Avaliação
-          </button>
+          <div className="flex items-center gap-3">
+            <ViewToggle mode={companyViewMode} onChange={setCompanyViewMode} />
+            <button
+              onClick={openModal}
+              className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl hover:bg-emerald-700 transition-colors font-medium text-sm"
+            >
+              <FiPlus size={16} />
+              Nova Avaliação
+            </button>
+          </div>
         </div>
 
         {companies.length === 0 ? (
@@ -128,7 +133,7 @@ export default function AssessmentsPage() {
             <FiClipboard size={40} className="mx-auto mb-3 opacity-50" />
             <p>Nenhuma empresa cadastrada.</p>
           </div>
-        ) : (
+        ) : companyViewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {companiesWithAssessments.map((c) => (
               <button
@@ -148,6 +153,37 @@ export default function AssessmentsPage() {
                 </p>
               </button>
             ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50 text-left">
+                  <th className="px-4 py-3 font-medium text-slate-600">Empresa</th>
+                  <th className="px-4 py-3 font-medium text-slate-600 text-right">Avaliações</th>
+                  <th className="px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {companiesWithAssessments.map((c) => (
+                  <tr
+                    key={c.id}
+                    onClick={() => selectCompany(c.id)}
+                    className="border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer transition-colors group"
+                  >
+                    <td className="px-4 py-3 font-medium text-slate-800 group-hover:text-emerald-700 transition-colors">
+                      {c.name}
+                    </td>
+                    <td className="px-4 py-3 text-slate-500 text-right">
+                      {c.count === 0 ? "—" : c.count}
+                    </td>
+                    <td className="px-4 py-3 text-right w-8">
+                      <FiChevronRight size={16} className="text-slate-300 group-hover:text-emerald-500 transition-colors inline" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
 

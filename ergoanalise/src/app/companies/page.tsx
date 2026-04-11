@@ -2,8 +2,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
-import { FiPlus, FiChevronRight, FiSearch, FiTrash2, FiLoader } from "react-icons/fi";
+import { FiPlus, FiChevronRight, FiSearch, FiTrash2, FiLoader, FiBriefcase } from "react-icons/fi";
 import { useToast } from "@/components/Toast";
+import ViewToggle, { ViewMode } from "@/components/ViewToggle";
 
 function formatCnpj(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 14);
@@ -46,6 +47,7 @@ export default function CompaniesPage() {
   const [search, setSearch] = useState("");
   const [fetchingCnpj, setFetchingCnpj] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -134,10 +136,13 @@ export default function CompaniesPage() {
           <h1 className="text-2xl font-bold text-slate-800">Empresas</h1>
           <p className="text-slate-500 text-sm mt-1">{companies.length} empresas cadastradas</p>
         </div>
-        <button onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-lg hover:bg-emerald-700 transition-colors font-medium text-sm">
-          <FiPlus size={18} /> Nova Empresa
-        </button>
+        <div className="flex items-center gap-3">
+          <ViewToggle mode={viewMode} onChange={setViewMode} />
+          <button onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-lg hover:bg-emerald-700 transition-colors font-medium text-sm">
+            <FiPlus size={18} /> Nova Empresa
+          </button>
+        </div>
       </div>
 
       <div className="relative mb-6">
@@ -147,23 +152,26 @@ export default function CompaniesPage() {
           className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition" />
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Nome Fantasia / Razão Social</th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">CNPJ</th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">Endereço</th>
-              <th className="px-6 py-3"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr><td colSpan={4} className="text-center py-12 text-slate-400">Nenhuma empresa encontrada.</td></tr>
-            ) : (
-              filtered.map((c) => (
+      {filtered.length === 0 ? (
+        <div className="text-center py-16 text-slate-400">
+          <FiSearch size={40} className="mx-auto mb-3 opacity-50" />
+          <p>Nenhuma empresa encontrada.</p>
+        </div>
+      ) : viewMode === "list" ? (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Nome Fantasia / Razão Social</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">CNPJ</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">Endereço</th>
+                <th className="px-6 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((c) => (
                 <tr key={c.id} onClick={() => router.push(`/companies/${c.id}/structure`)}
-                  className="border-b border-slate-100 hover:bg-emerald-50 cursor-pointer transition-colors">
+                  className="border-b border-slate-100 hover:bg-emerald-50 cursor-pointer transition-colors group">
                   <td className="px-6 py-4">
                     <p className="font-medium text-slate-800">{c.name}</p>
                     {c.razaoSocial && <p className="text-xs text-slate-400 mt-0.5">{c.razaoSocial}</p>}
@@ -173,18 +181,47 @@ export default function CompaniesPage() {
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={(e) => { e.stopPropagation(); if (confirm(`Excluir "${c.name}" e todos os seus dados?`)) deleteCompany(c.id); }}
-                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Excluir">
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100" title="Excluir">
                         <FiTrash2 size={15} />
                       </button>
-                      <FiChevronRight className="text-slate-400" />
+                      <FiChevronRight className="text-slate-400 group-hover:text-emerald-500 transition-colors" />
                     </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filtered.map((c) => (
+            <div
+              key={c.id}
+              onClick={() => router.push(`/companies/${c.id}/structure`)}
+              className="bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:border-emerald-300 hover:shadow-sm transition-all group"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-10 h-10 rounded-xl bg-slate-100 group-hover:bg-emerald-100 flex items-center justify-center transition-colors shrink-0">
+                  <FiBriefcase size={18} className="text-slate-400 group-hover:text-emerald-600 transition-colors" />
+                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); if (confirm(`Excluir "${c.name}" e todos os seus dados?`)) deleteCompany(c.id); }}
+                  className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                  title="Excluir"
+                >
+                  <FiTrash2 size={14} />
+                </button>
+              </div>
+              <p className="font-semibold text-slate-800 leading-tight group-hover:text-emerald-700 transition-colors">{c.name}</p>
+              {c.razaoSocial && <p className="text-xs text-slate-400 mt-0.5 truncate">{c.razaoSocial}</p>}
+              <p className="text-xs text-slate-500 mt-2">{c.cnpj}</p>
+              {(c.endereco || c.city) && (
+                <p className="text-xs text-slate-400 mt-0.5 truncate">{c.endereco || c.city}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
