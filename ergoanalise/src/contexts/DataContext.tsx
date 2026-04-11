@@ -54,6 +54,17 @@ export interface AnthroRange { id: string; name: string; minHeight: number; maxH
 
 export interface AppUser { id: string; email: string; name: string; role: string; }
 
+export interface ActionPlanQuestion {
+  id: string; question: string; priority: 'baixa' | 'media' | 'alta' | 'urgente'; ordem: number;
+}
+export interface DocumentTemplate {
+  id: string; type: 'cover' | 'body_initial' | 'body_final'; content: string;
+}
+export interface Aet {
+  id: string; companyId: string; currentStep: number; conclusaoGeral: string;
+  createdAt: string; completedAt?: string;
+}
+
 export interface Gse {
   id: string;
   companyId: string;
@@ -187,11 +198,24 @@ interface DataContextType {
   removeGseRisk: (gseId: string, risco: string) => Promise<void>;
   addGseAssessment: (gseId: string, assessmentId: string) => Promise<void>;
   removeGseAssessment: (gseId: string, assessmentId: string) => Promise<void>;
-  // Action Checklist (Plano Geral)
+  // Action Checklist (Plano Geral) — legacy, mantido para compatibilidade
   actionChecklist: ActionChecklistItem[];
   addActionChecklistItem: (companyId: string, item: string) => Promise<void>;
   updateActionChecklistItem: (id: string, d: Partial<Pick<ActionChecklistItem, "resposta" | "item">>) => Promise<void>;
   deleteActionChecklistItem: (id: string) => Promise<void>;
+  // Action Plan Questions (Cadastros)
+  actionPlanQuestions: ActionPlanQuestion[];
+  addActionPlanQuestion: (q: Omit<ActionPlanQuestion, "id">) => Promise<ActionPlanQuestion>;
+  updateActionPlanQuestion: (id: string, d: Partial<ActionPlanQuestion>) => Promise<void>;
+  deleteActionPlanQuestion: (id: string) => Promise<void>;
+  // Document Templates (Cadastros)
+  documentTemplates: DocumentTemplate[];
+  saveDocumentTemplate: (type: DocumentTemplate["type"], content: string) => Promise<void>;
+  // AETs
+  aets: Aet[];
+  addAet: (companyId: string) => Promise<Aet>;
+  updateAet: (id: string, d: Partial<Pick<Aet, "currentStep" | "conclusaoGeral" | "completedAt">>) => Promise<void>;
+  deleteAet: (id: string) => Promise<void>;
   refreshData: () => Promise<void>;
 }
 
@@ -248,6 +272,15 @@ function buildGse(row: any, positions: string[], assessments: string[], risks: s
 function mapActionChecklist(r: any): ActionChecklistItem {
   return { id: r.id, companyId: r.company_id, item: r.item, resposta: r.resposta || null, ordem: r.ordem || 0 };
 }
+function mapActionPlanQuestion(r: any): ActionPlanQuestion {
+  return { id: r.id, question: r.question, priority: r.priority, ordem: r.ordem || 0 };
+}
+function mapDocumentTemplate(r: any): DocumentTemplate {
+  return { id: r.id, type: r.type, content: r.content || '' };
+}
+function mapAet(r: any): Aet {
+  return { id: r.id, companyId: r.company_id, currentStep: r.current_step || 1, conclusaoGeral: r.conclusao_geral || '', createdAt: r.created_at, completedAt: r.completed_at || undefined };
+}
 
 // ─── Provider ────────────────────────────────────────────────────────
 export function DataProvider({ children }: { children: ReactNode }) {
@@ -264,6 +297,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [avaliadores, setAvaliadores] = useState<Avaliador[]>([]);
   const [gses, setGses] = useState<Gse[]>([]);
   const [actionChecklist, setActionChecklist] = useState<ActionChecklistItem[]>([]);
+  const [actionPlanQuestions, setActionPlanQuestions] = useState<ActionPlanQuestion[]>([]);
+  const [documentTemplates, setDocumentTemplates] = useState<DocumentTemplate[]>([]);
+  const [aets, setAets] = useState<Aet[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Busca todos os registros de uma tabela ignorando o limite padrão de 1000 linhas do PostgREST
@@ -336,6 +372,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
           gseRiskData.filter((r: any) => r.gse_id === row.id).map((r: any) => r.risco),
         )
       ));
+
+      // Load action plan questions, document templates, AETs
+      const [apqRes, dtRes, aetRes] = await Promise.all([
+        supabase.from("action_plan_questions").select("*").order("ordem"),
+        supabase.from("document_templates").select("*"),
+        supabase.from("aets").select("*").order("created_at", { ascending: false }),
+      ]);
+      setActionPlanQuestions((apqRes.data || []).map(mapActionPlanQuestion));
+      setDocumentTemplates((dtRes.data || []).map(mapDocumentTemplate));
+      setAets((aetRes.data || []).map(mapAet));
     } catch (e) {
       console.error("loadData error:", e);
     }
@@ -370,6 +416,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setCompanies([]); setSectors([]); setPositions([]); setSurveys([]);
       setAssessments([]); setActions([]); setBlocks([]); setTemplates([]); setAnthroRanges([]); setAvaliadores([]); setGses([]); setActionChecklist([]);
+      setActionPlanQuestions([]); setDocumentTemplates([]); setAets([]);
       return;
     }
     // Set user first (even without profile) so UI unblocks
@@ -803,6 +850,66 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setActionChecklist((prev) => prev.filter((a) => a.id !== id));
   };
 
+  // ── Action Plan Questions ──
+  const addActionPlanQuestion = async (q: Omit<ActionPlanQuestion, "id">): Promise<ActionPlanQuestion> => {
+    const maxOrdem = actionPlanQuestions.reduce((m, a) => Math.max(m, a.ordem), 0);
+    const { data, error } = await supabase.from("action_plan_questions").insert({ question: q.question, priority: q.priority, ordem: maxOrdem + 1, user_id: user?.id }).select().single();
+    if (error || !data) throw new Error(error?.message || "Erro ao criar pergunta");
+    const item = mapActionPlanQuestion(data);
+    setActionPlanQuestions((prev) => [...prev, item]);
+    return item;
+  };
+
+  const updateActionPlanQuestion = async (id: string, d: Partial<ActionPlanQuestion>) => {
+    const update: any = {};
+    if (d.question !== undefined) update.question = d.question;
+    if (d.priority !== undefined) update.priority = d.priority;
+    if (d.ordem !== undefined) update.ordem = d.ordem;
+    await supabase.from("action_plan_questions").update(update).eq("id", id);
+    setActionPlanQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, ...d } : q)));
+  };
+
+  const deleteActionPlanQuestion = async (id: string) => {
+    await supabase.from("action_plan_questions").delete().eq("id", id);
+    setActionPlanQuestions((prev) => prev.filter((q) => q.id !== id));
+  };
+
+  // ── Document Templates ──
+  const saveDocumentTemplate = async (type: DocumentTemplate["type"], content: string) => {
+    const existing = documentTemplates.find((t) => t.type === type);
+    if (existing) {
+      await supabase.from("document_templates").update({ content }).eq("id", existing.id);
+      setDocumentTemplates((prev) => prev.map((t) => (t.id === existing.id ? { ...t, content } : t)));
+    } else {
+      const { data, error } = await supabase.from("document_templates").insert({ type, content, user_id: user?.id }).select().single();
+      if (error || !data) throw new Error(error?.message || "Erro ao salvar modelo");
+      setDocumentTemplates((prev) => [...prev, mapDocumentTemplate(data)]);
+    }
+  };
+
+  // ── AETs ──
+  const addAet = async (companyId: string): Promise<Aet> => {
+    const { data, error } = await supabase.from("aets").insert({ company_id: companyId, current_step: 1, conclusao_geral: '', user_id: user?.id }).select().single();
+    if (error || !data) throw new Error(error?.message || "Erro ao criar AET");
+    const aet = mapAet(data);
+    setAets((prev) => [aet, ...prev]);
+    return aet;
+  };
+
+  const updateAet = async (id: string, d: Partial<Pick<Aet, "currentStep" | "conclusaoGeral" | "completedAt">>) => {
+    const update: any = {};
+    if (d.currentStep !== undefined) update.current_step = d.currentStep;
+    if (d.conclusaoGeral !== undefined) update.conclusao_geral = d.conclusaoGeral;
+    if (d.completedAt !== undefined) update.completed_at = d.completedAt;
+    await supabase.from("aets").update(update).eq("id", id);
+    setAets((prev) => prev.map((a) => (a.id === id ? { ...a, ...d } : a)));
+  };
+
+  const deleteAet = async (id: string) => {
+    await supabase.from("aets").delete().eq("id", id);
+    setAets((prev) => prev.filter((a) => a.id !== id));
+  };
+
   const refreshData = loadData;
 
   return (
@@ -818,6 +925,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         addAnthroRange, updateAnthroRange, deleteAnthroRange,
         gses, addGse, updateGse, deleteGse, addGsePosition, removeGsePosition, addGseRisk, removeGseRisk, addGseAssessment, removeGseAssessment,
         actionChecklist, addActionChecklistItem, updateActionChecklistItem, deleteActionChecklistItem,
+        actionPlanQuestions, addActionPlanQuestion, updateActionPlanQuestion, deleteActionPlanQuestion,
+        documentTemplates, saveDocumentTemplate,
+        aets, addAet, updateAet, deleteAet,
         refreshData,
       }}
     >

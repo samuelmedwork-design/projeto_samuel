@@ -6,12 +6,13 @@ import { useData } from "@/contexts/DataContext";
 import {
   FiHome, FiClipboard, FiActivity, FiFileText, FiLogOut, FiUser,
   FiGrid, FiList, FiMenu, FiX, FiBarChart2, FiChevronLeft, FiChevronRight, FiUsers,
-  FiChevronDown, FiChevronUp, FiFolder,
+  FiChevronDown, FiChevronUp, FiFolder, FiCheckSquare, FiBook,
 } from "react-icons/fi";
 
 const standaloneLinks = [
   { href: "/dashboard", label: "Dashboard", icon: FiBarChart2 },
   { href: "/assessments", label: "Avaliações", icon: FiClipboard },
+  { href: "/aet", label: "AET", icon: FiFileText },
 ];
 
 const cadastroLinks = [
@@ -20,6 +21,8 @@ const cadastroLinks = [
   { href: "/blocks", label: "Blocos", icon: FiGrid },
   { href: "/checklist-templates", label: "Checklists", icon: FiList },
   { href: "/anthropometry", label: "Antropometria", icon: FiActivity },
+  { href: "/cadastros/plano-acao-geral", label: "Plano de Ação Geral", icon: FiCheckSquare },
+  { href: "/cadastros/modelos", label: "Modelos de Docs.", icon: FiBook },
 ];
 
 const bottomLinks = [
@@ -33,7 +36,7 @@ export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const isCadastroActive = cadastroLinks.some(
-    (l) => pathname === l.href || pathname.startsWith(l.href)
+    (l) => pathname === l.href || pathname.startsWith(l.href + "/")
   );
   const [cadastroOpen, setCadastroOpen] = useState(isCadastroActive);
 
