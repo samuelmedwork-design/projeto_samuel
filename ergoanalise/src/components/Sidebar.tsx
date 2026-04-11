@@ -5,28 +5,25 @@ import { usePathname } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
 import {
   FiHome, FiClipboard, FiActivity, FiFileText, FiLogOut, FiUser,
-  FiGrid, FiList, FiMenu, FiX, FiBarChart2, FiChevronLeft, FiChevronRight, FiUsers,
+  FiGrid, FiList, FiMenu, FiX, FiBarChart2, FiPieChart, FiChevronLeft, FiChevronRight, FiUsers,
   FiChevronDown, FiChevronUp, FiFolder, FiCheckSquare, FiBook,
 } from "react-icons/fi";
 
 const standaloneLinks = [
   { href: "/dashboard", label: "Dashboard", icon: FiBarChart2 },
   { href: "/assessments", label: "Avaliações", icon: FiClipboard },
+  { href: "/reports", label: "Relatórios", icon: FiPieChart },
   { href: "/aet", label: "AET", icon: FiFileText },
 ];
 
 const cadastroLinks = [
   { href: "/companies", label: "Empresas", icon: FiHome },
-  { href: "/avaliadores", label: "Avaliadores", icon: FiUsers },
   { href: "/blocks", label: "Blocos", icon: FiGrid },
   { href: "/checklist-templates", label: "Checklists", icon: FiList },
+  { href: "/avaliadores", label: "Avaliadores", icon: FiUsers },
   { href: "/anthropometry", label: "Antropometria", icon: FiActivity },
   { href: "/cadastros/plano-acao-geral", label: "Plano de Ação Geral", icon: FiCheckSquare },
   { href: "/cadastros/modelos", label: "Modelos de Docs.", icon: FiBook },
-];
-
-const bottomLinks = [
-  { href: "/reports", label: "Relatórios", icon: FiFileText },
 ];
 
 export default function Sidebar() {
@@ -38,7 +35,7 @@ export default function Sidebar() {
   const isCadastroActive = cadastroLinks.some(
     (l) => pathname === l.href || pathname.startsWith(l.href + "/")
   );
-  const [cadastroOpen, setCadastroOpen] = useState(isCadastroActive);
+  const [cadastroOpen, setCadastroOpen] = useState(true);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -184,11 +181,6 @@ export default function Sidebar() {
             </div>
           )}
 
-          {/* Separador */}
-          {!collapsed && <div className="border-t border-slate-700 my-2" />}
-
-          {/* Links do rodapé */}
-          {bottomLinks.map(renderLink)}
         </nav>
 
         {/* User + Toggle */}
