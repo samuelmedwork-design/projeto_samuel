@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   FiClipboard, FiPlus, FiEye, FiTrash2, FiSearch,
   FiArrowLeft, FiChevronRight, FiFilter
@@ -11,6 +11,7 @@ import ViewToggle, { ViewMode } from "@/components/ViewToggle";
 export default function AssessmentsPage() {
   const { templates, assessments, companies, sectors, positions, blocks, deleteAssessment } = useData();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Empresa selecionada para visualização
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
@@ -28,6 +29,20 @@ export default function AssessmentsPage() {
   const [selCompany, setSelCompany] = useState("");
   const [selSectors, setSelSectors] = useState<string[]>([]);
   const [selPositions, setSelPositions] = useState<string[]>([]);
+
+  // Abre o modal automaticamente se vier de "Nova avaliação com este checklist"
+  useEffect(() => {
+    const newWith = searchParams.get("newWith");
+    if (newWith && templates.length > 0) {
+      setSelTemplate(newWith);
+      setSelCompany(selectedCompanyId ?? "");
+      setSelSectors([]);
+      setSelPositions([]);
+      setShowModal(true);
+      // Limpa o param da URL sem recarregar
+      router.replace("/assessments");
+    }
+  }, [searchParams, templates]);
 
   const modalSectors = sectors.filter((s) => s.companyId === selCompany);
   const modalPositions = positions.filter((p) => selSectors.includes(p.sectorId));

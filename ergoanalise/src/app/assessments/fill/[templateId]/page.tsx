@@ -3,7 +3,7 @@ import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
 import type { FilledAnswer, FilledBlock, ChecklistBlock } from "@/contexts/DataContext";
-import { FiArrowLeft, FiSave, FiCheck, FiAlertTriangle, FiCamera, FiX, FiRefreshCw } from "react-icons/fi";
+import { FiArrowLeft, FiSave, FiCheck, FiAlertTriangle, FiCamera, FiImage, FiX, FiRefreshCw } from "react-icons/fi";
 
 export default function AssessmentFillPage() {
   const params = useParams();
@@ -93,6 +93,7 @@ export default function AssessmentFillPage() {
 
   // ── Foto do posto (única por avaliação) ───────────────────────────────────
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const resizeImage = useCallback((file: File): Promise<string> => {
     return new Promise((resolve) => {
@@ -257,7 +258,7 @@ export default function AssessmentFillPage() {
             Voltar às Avaliações
           </button>
           <button
-            onClick={() => router.push(`/assessments/fill/${templateId}`)}
+            onClick={() => router.push(`/assessments?newWith=${templateId}`)}
             className="flex items-center gap-2 bg-white border border-slate-300 text-slate-700 px-6 py-3 rounded-lg font-medium hover:bg-slate-50 transition-colors"
           >
             Nova Avaliação com este Checklist
@@ -270,12 +271,19 @@ export default function AssessmentFillPage() {
   // ── Formulário principal ──────────────────────────────────────────────────
   return (
     <div className="p-8 max-w-4xl">
-      {/* Input oculto para foto do posto */}
+      {/* Inputs ocultos para foto do posto */}
       <input
         ref={photoInputRef}
         type="file"
         accept="image/*"
         capture="environment"
+        onChange={handlePhotoCapture}
+        className="hidden"
+      />
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
         onChange={handlePhotoCapture}
         className="hidden"
       />
@@ -384,14 +392,24 @@ export default function AssessmentFillPage() {
               </button>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => photoInputRef.current?.click()}
-              className="flex items-center gap-2 px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <FiCamera size={16} />
-              Tirar foto do posto
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                className="flex items-center gap-2 px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                <FiCamera size={16} />
+                Tirar foto
+              </button>
+              <button
+                type="button"
+                onClick={() => galleryInputRef.current?.click()}
+                className="flex items-center gap-2 px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                <FiImage size={16} />
+                Galeria / Arquivo
+              </button>
+            </div>
           )}
         </div>
       </div>
